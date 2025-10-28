@@ -1,0 +1,17 @@
+{
+  "name": "karih-al-shoujo-site",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "astro": "^4.15.0",
+    "@astrojs/prefetch": "^0.4.0",
+    "fast-glob": "^3.3.2",
+    "reading-time": "^1.5.0"
+  }
+}

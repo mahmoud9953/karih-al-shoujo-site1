@@ -1,0 +1,63 @@
+---
+import Base from "@/layouts/Base.astro";
+
+// Build all /novels/<slug>/<chapter> paths at build time
+export async function getStaticPaths() {
+  const all = import.meta.glob("/src/content/novels/**/*.md", { eager: true });
+  const paths: { params: { slug: string; chapter: string } }[] = [];
+
+  for (const mod of Object.values(all) as any[]) {
+    const fm = mod.frontmatter || {};
+    if (fm.slug && (fm.chapter ?? null) != null) {
+      paths.push({ params: { slug: String(fm.slug), chapter: String(fm.chapter) } });
+    }
+  }
+  return paths;
+}
+
+const { slug, chapter } = Astro.params;
+
+// Load all chapters (eager), then find current/prev/next
+const modules = import.meta.glob("/src/content/novels/**/*.md", { eager: true });
+type FM = { title?: string; novel?: string; slug?: string; chapter?: number; summary?: string; publishedAt?: string };
+
+const list: { fm: FM; mod: any }[] = [];
+for (const mod of Object.values(modules) as any[]) {
+  const fm: FM = mod.frontmatter || {};
+  if (fm.slug === slug) list.push({ fm, mod });
+}
+list.sort((a, b) => (a.fm.chapter ?? 0) - (b.fm.chapter ?? 0));
+
+const chNum = Number(chapter);
+const idx = list.findIndex((x) => Number(x.fm.chapter) === chNum);
+if (idx === -1) {
+  throw new Error(`لم يتم العثور على الفصل ${chapter} في الرواية ${slug}`);
+}
+
+const cur = list[idx];
+const prev = idx > 0 ? list[idx - 1].fm.chapter : null;
+const next = idx < list.length - 1 ? list[idx + 1].fm.chapter : null;
+
+const fm = cur.fm;
+const titleText = `${fm.title || ("الفصل " + chapter)} — ${fm.novel || slug}`;
+---
+
+<Base title={titleText} description={fm.summary || titleText}>
+  <article class="chapter" id="reader">
+    <h1>{fm.title || ("الفصل " + chapter)}</h1>
+    <p class="muted">
+      رواية: <span class="badge">{fm.novel || slug}</span> ·
+      الفصل: <span class="badge">{fm.chapter || chapter}</span> ·
+      <span class="badge">{fm.publishedAt || ""}</span>
+    </p>
+
+    <!-- Render markdown content -->
+    <Fragment set:html={await (cur.mod as any).compiledContent()} />
+
+    <div class="chapter-nav">
+      {prev ? <a rel="prev" href={`/novels/${slug}/${prev}`}>« السابق</a> : <span></span>}
+      <a href={`/novels/${slug}`}>فهرس الفصول</a>
+      {next ? <a rel="next" href={`/novels/${slug}/${next}`}>التالي »</a> : <span></span>}
+    </div>
+  </article>
+</Base>

@@ -1,0 +1,20 @@
+
+---
+import Base from "@/layouts/Base.astro";
+import { getAllNovels, getChapters } from "@/lib/content.js";
+const slugs = await getAllNovels();
+const novels = [];
+for (const slug of slugs) {
+  const chapters = await getChapters(slug);
+  const first = chapters[0];
+  novels.push({ slug, title: first?.novel || slug, count: chapters.length });
+}
+---
+<Base title="الروايات — موقع الروايات" description="قائمة بجميع الروايات المتاحة">
+  <h1>جميع الروايات</h1>
+  <ul>
+    {novels.map(n => (
+      <li><a href={`/novels/${n.slug}`}><strong>{n.title}</strong></a> <span class="muted">— {n.count} فصل</span></li>
+    ))}
+  </ul>
+</Base>
