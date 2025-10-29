@@ -60,8 +60,8 @@ const titleText = `${fm.title || ("الفصل " + chapter)} — ${fm.novel || sl
 <div class="chapter-toolbar" dir="rtl">
   <!-- Previous -->
   {prev
-    ? <a class="btn-nav" rel="prev" href={`/novels/${slug}/${prev}`}>⬅️ السابق</a>
-    : <button class="btn-nav disabled" disabled>⬅️ السابق</button>}
+    ? <a class="btn-nav" rel="prev" href={`/novels/${slug}/${prev}`}>⬅➡️ السابق</a>
+    : <button class="btn-nav disabled" disabled>⬅➡️ السابق</button>}
 
   <!-- Chapter picker -->
   <div class="chapter-picker">
@@ -76,8 +76,8 @@ const titleText = `${fm.title || ("الفصل " + chapter)} — ${fm.novel || sl
 
   <!-- Next -->
   {next
-    ? <a class="btn-nav" rel="next" href={`/novels/${slug}/${next}`}>التالي ➡️</a>
-    : <button class="btn-nav disabled" disabled>التالي ➡️</button>}
+    ? <a class="btn-nav" rel="next" href={`/novels/${slug}/${next}`}>التالي ⬅️</a>
+    : <button class="btn-nav disabled" disabled>التالي ⬅️</button>}
 </div>
 
 <!-- Keep a clean link to the TOC under the toolbar (optional) -->
