@@ -1,20 +1,34 @@
-
 ---
 import Base from "@/layouts/Base.astro";
-import { getAllNovels, getChapters } from "@/lib/content.js";
-const slugs = await getAllNovels();
-const novels = [];
-for (const slug of slugs) {
-  const chapters = await getChapters(slug);
-  const first = chapters[0];
-  novels.push({ slug, title: first?.novel || slug, count: chapters.length });
+
+// Load ALL markdown files eagerly at build time (Vercel-safe)
+const modules = import.meta.glob("/src/content/novels/**/*.md", { eager: true });
+
+type FM = { slug?: string; novel?: string; chapter?: number; title?: string };
+
+const bySlug = new Map<string, FM[]>();
+
+for (const mod of Object.values(modules) as any[]) {
+  const fm: FM = mod.frontmatter || {};
+  if (!fm.slug) continue;
+  if (!bySlug.has(fm.slug)) bySlug.set(fm.slug, []);
+  bySlug.get(fm.slug)!.push(fm);
+}
+
+// sort chapters inside each novel
+for (const arr of bySlug.values()) {
+  arr.sort((a, b) => (a.chapter ?? 0) - (b.chapter ?? 0));
 }
 ---
-<Base title="الروايات — موقع الروايات" description="قائمة بجميع الروايات المتاحة">
-  <h1>جميع الروايات</h1>
-  <ul>
-    {novels.map(n => (
-      <li><a href={`/novels/${n.slug}`}><strong>{n.title}</strong></a> <span class="muted">— {n.count} فصل</span></li>
+
+<Base title="الروايات" description="كل الروايات المتاحة">
+  <h1>الروايات</h1>
+  <ul class="toc" style="text-align:right; margin-top:1rem;">
+    {Array.from(bySlug.entries()).map(([slug, chapters]) => (
+      <li style="margin:.5rem 0;">
+        <a href={`/novels/${slug}`}>{chapters[0]?.novel || slug}</a>
+        <span class="muted"> — {chapters.length} فصول</span>
+      </li>
     ))}
   </ul>
 </Base>
