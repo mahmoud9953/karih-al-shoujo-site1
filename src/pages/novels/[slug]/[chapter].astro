@@ -37,6 +37,8 @@ if (idx === -1) {
 const cur = list[idx];
 const prev = idx > 0 ? list[idx - 1].fm.chapter : null;
 const next = idx < list.length - 1 ? list[idx + 1].fm.chapter : null;
+const allChapters = list.map((x) => Number(x.fm.chapter)).filter(Number.isFinite).sort((a,b)=>a-b);
+
 
 const fm = cur.fm;
 const titleText = `${fm.title || ("الفصل " + chapter)} — ${fm.novel || slug}`;
@@ -54,10 +56,80 @@ const titleText = `${fm.title || ("الفصل " + chapter)} — ${fm.novel || sl
     <!-- Render markdown content -->
     <Fragment set:html={await (cur.mod as any).compiledContent()} />
 
-    <div class="chapter-nav">
-      {prev ? <a rel="prev" href={`/novels/${slug}/${prev}`}>« السابق</a> : <span></span>}
-      <a href={`/novels/${slug}`}>فهرس الفصول</a>
-      {next ? <a rel="next" href={`/novels/${slug}/${next}`}>التالي »</a> : <span></span>}
-    </div>
+    <!-- Toolbar: previous | chapter picker | next -->
+<div class="chapter-toolbar" dir="rtl">
+  <!-- Previous -->
+  {prev
+    ? <a class="btn-nav" rel="prev" href={`/novels/${slug}/${prev}`}>⬅️ السابق</a>
+    : <button class="btn-nav disabled" disabled>⬅️ السابق</button>}
+
+  <!-- Chapter picker -->
+  <div class="chapter-picker">
+    <label for="chapterSelect" class="picker-label">اختر فصل:</label>
+    <select id="chapterSelect" class="picker-select"
+            onchange={`location.href='/novels/${slug}/' + this.value`}>
+      {allChapters.map((n) => (
+        <option value={n} selected={n === Number(chapter)}>الفصل {n}</option>
+      ))}
+    </select>
+  </div>
+
+  <!-- Next -->
+  {next
+    ? <a class="btn-nav" rel="next" href={`/novels/${slug}/${next}`}>التالي ➡️</a>
+    : <button class="btn-nav disabled" disabled>التالي ➡️</button>}
+</div>
+
+<!-- Keep a clean link to the TOC under the toolbar (optional) -->
+<div style="margin-top:.75rem; text-align:center;">
+  <a href={`/novels/${slug}`} class="btn-nav" style="background:#1f2329;">فهرس الفصول</a>
+</div>
   </article>
 </Base>
+<style>
+  .chapter-toolbar{
+    margin-top: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: .85rem 1rem;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+    backdrop-filter: blur(6px);
+  }
+  .btn-nav{
+    display:inline-block;
+    padding: .55rem .9rem;
+    border-radius: 10px;
+    text-decoration: none;
+    background: #2b2f36;
+    color: #ffffff;
+    border: 1px solid rgba(255,255,255,0.12);
+    transition: transform .08s ease, background .2s ease, border-color .2s ease;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .btn-nav:hover{ background:#343a45; border-color:rgba(255,255,255,0.2); transform: translateY(-1px);}
+  .btn-nav.disabled{ opacity: .5; cursor: not-allowed; background:#2b2f36; }
+
+  .chapter-picker{
+    display:flex; align-items:center; gap:.5rem;
+    background: rgba(0,0,0,0.15);
+    padding:.4rem .6rem; border-radius: 10px; border:1px solid rgba(255,255,255,0.10);
+  }
+  .picker-label{ font-size:.95rem; opacity:.9; }
+  .picker-select{
+    padding:.45rem .55rem; border-radius:8px; border:1px solid rgba(255,255,255,0.18);
+    background:#1f2329; color:#fff; min-width: 9rem; outline:none;
+  }
+  .picker-select:focus{ border-color:#7aa2ff; box-shadow: 0 0 0 2px rgba(122,162,255,0.25); }
+  
+  @media (max-width: 520px){
+    .chapter-toolbar{ flex-wrap: wrap; justify-content: center; gap:.6rem; }
+    .chapter-picker{ width:100%; justify-content:center; }
+  }
+</style>
+
