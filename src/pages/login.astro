@@ -1,0 +1,61 @@
+---
+import Base from "@/layouts/Base.astro";
+---
+
+<Base title="تسجيل الدخول" dir="rtl">
+  <h1 style="margin-bottom: 12px;">تسجيل الدخول / إنشاء حساب</h1>
+
+  <div id="login" style="display: grid; gap: 8px; max-width: 360px;">
+    <button id="google">متابعة عبر Google</button>
+
+    <div style="margin-top: 8px;">
+      <input id="email" placeholder="Email" style="width: 100%; padding: 8px; margin-bottom: 6px;" />
+      <input id="pass"  placeholder="Password" type="password" style="width: 100%; padding: 8px; margin-bottom: 6px;" />
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button id="email-login">تسجيل دخول</button>
+        <button id="email-signup">تسجيل جديد</button>
+      </div>
+    </div>
+
+    <p id="msg" style="color: #666;"></p>
+  </div>
+
+  <script type="module">
+    import { auth } from "/src/lib/firebase";
+    import {
+      GoogleAuthProvider, signInWithPopup,
+      signInWithEmailAndPassword, createUserWithEmailAndPassword
+    } from "firebase/auth";
+
+    const msg   = document.getElementById("msg");
+    const email = document.getElementById("email");
+    const pass  = document.getElementById("pass");
+
+    document.getElementById("google").onclick = async () => {
+      try {
+        await signInWithPopup(auth, new GoogleAuthProvider());
+        location.href = "/"; // go home after login
+      } catch (e) {
+        msg.textContent = "فشل تسجيل الدخول عبر جوجل";
+      }
+    };
+
+    document.getElementById("email-login").onclick = async () => {
+      try {
+        await signInWithEmailAndPassword(auth, email.value, pass.value);
+        location.href = "/";
+      } catch (e) {
+        msg.textContent = "فشل تسجيل الدخول بالبريد";
+      }
+    };
+
+    document.getElementById("email-signup").onclick = async () => {
+      try {
+        await createUserWithEmailAndPassword(auth, email.value, pass.value);
+        location.href = "/";
+      } catch (e) {
+        msg.textContent = "فشل إنشاء الحساب";
+      }
+    };
+  </script>
+</Base>
