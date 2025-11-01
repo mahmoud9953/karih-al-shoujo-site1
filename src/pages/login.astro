@@ -1,62 +1,36 @@
 ---
-import Base from '../layouts/Base.astro'; // adjust ONLY if your Base.astro path is different
+import Base from '../layouts/Base.astro';
 ---
 
 <Base title="تسجيل الدخول">
   <h1 style="text-align:center;margin:2rem 0;">تسجيل الدخول</h1>
 
-  <div style="display:grid;gap:12px;max-width:320px;margin:0 auto;">
-    <button id="googleBtn" class="btn">المتابعة مع Google</button>
+  <div class="card" style="max-width:420px;margin:0 auto;text-align:center;gap:12px;display:grid;">
+    <button id="googleBtn">التسجيل مع Google</button>
 
-    <input id="email" type="email" placeholder="البريد الإلكتروني" class="input" />
-    <input id="password" type="password" placeholder="كلمة المرور" class="input" />
+    <input id="email" type="email" placeholder="البريد الإلكتروني" dir="ltr" />
+    <input id="password" type="password" placeholder="كلمة المرور" dir="ltr" />
 
-    <div style="display:flex;gap:8px;justify-content:space-between">
-      <button id="emailLogin" class="btn">تسجيل الدخول</button>
-      <button id="emailRegister" class="btn">إنشاء حساب</button>
+    <div style="display:flex; gap:8px; justify-content:center;">
+      <button id="emailLogin">تسجيل الدخول</button>
+      <button id="emailRegister">تسجيل جديد</button>
     </div>
 
-    <button id="logoutBtn" class="btn">تسجيل الخروج</button>
-    <div id="msg" style="text-align:center;margin-top:.5rem;min-height:1.2rem;"></div>
+    <button id="logoutBtn">تسجيل الخروج</button>
+    <p id="msg" style="min-height:1.5em"></p>
   </div>
 
   <style>
-    .btn{
-      padding:.7rem 1rem;border-radius:10px;border:1px solid #555;
-      background:#222;color:#fff;cursor:pointer;
-      transition: transform .06s ease, background .12s ease, box-shadow .12s ease;
-    }
-    .btn:active{ transform: scale(0.98); background:#2c2c2c; }
-    .btn:focus-visible{
-      outline:2px solid #6aa8ff; outline-offset:2px;
-      box-shadow:0 0 0 3px rgba(106,168,255,.25);
-    }
-    .input{
-      padding:.6rem .8rem;border-radius:10px;border:1px solid #555;background:#111;color:#eee;
-    }
-    button {
-  transition: transform 120ms ease, filter 120ms ease;
-}
-button:active {
-  transform: scale(0.98);
-  filter: brightness(0.95);
-}
-button:focus-visible {
-  outline: 2px solid #8ab4f8; /* subtle focus ring */
-  outline-offset: 2px;
-}
-
+    button{ transition: transform 120ms ease, filter 120ms ease; }
+    button:active{ transform: scale(.98); filter: brightness(.95); }
+    button:focus-visible{ outline:2px solid #8ab4f8; outline-offset:2px; }
+    input{ padding:.6rem .8rem; border-radius:.6rem; border:1px solid #444; background:#111; color:#eee; }
+    .card button{ padding:.6rem .8rem; border-radius:.6rem; border:1px solid #444; background:#222; color:#eee; }
   </style>
 
-  <!-- This is the ONLY script include we need -->
-  ---
-// (frontmatter can stay empty)
----
-<!-- other page HTML ... -->
-
-<script type="module">
-  import { setupLoginPage } from '../lib/login.js';  // path is from src/pages/login.astro → src/lib/login.js
-  setupLoginPage();
-</script>
-
+  <script type="module">
+    // IMPORTANT: import the module, don't use <script src="/login.js">
+    import { setupLoginPage } from '../lib/login.js';
+    document.addEventListener('DOMContentLoaded', setupLoginPage);
+  </script>
 </Base>
