@@ -26,12 +26,30 @@ import Base from '../layouts/Base.astro';
   </div>
 
   <!-- Load the module from the correct absolute path -->
-  <script type="module" src="/src/lib/login.js"></script>
+  <script type="module">
+  import '/src/lib/login.js';
+</script>
+
 
   <style>
-    .btn{
-      padding:.7rem 1rem;border-radius:10px;border:1px solid #555;background:#222;color:#fff;cursor:pointer
-    }
-    .btn:hover{background:#2b2b2b}
-  </style>
+  .btn{
+    padding:.7rem 1rem;
+    border-radius:10px;
+    border:1px solid #555;
+    background:#222;
+    color:#fff;
+    cursor:pointer;
+    transition: transform .06s ease, background .12s ease, box-shadow .12s ease;
+  }
+  .btn:active{
+    transform: scale(0.98);
+    background:#2c2c2c;
+  }
+  .btn:focus-visible{
+    outline: 2px solid #6aa8ff;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(106,168,255,.25);
+  }
+</style>
+
 </Base>
