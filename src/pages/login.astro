@@ -26,9 +26,11 @@ import Base from '../layouts/Base.astro';
   </div>
 
   <!-- Load the module from the correct absolute path -->
-  <script type="module">
-  import '../lib/login.js';
-</script>
+  ---
+// nothing needed in the front-matter
+---
+<script type="module" src={Astro.resolve('../lib/login.js')}></script>
+
 
 
 
