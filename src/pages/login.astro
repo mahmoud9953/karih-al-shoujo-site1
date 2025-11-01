@@ -103,5 +103,9 @@ import Base from '../layouts/Base.astro';
         show('');
       }
     });
-  </script>
+  <script type="module">
+  import { setupLoginPage } from '../../lib/login.js';
+  setupLoginPage();
+</script>
+
 </Base>
