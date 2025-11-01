@@ -1,123 +1,61 @@
 ---
-import Base from '../layouts/Base.astro';
+import Base from '../layouts/Base.astro'; // path is from src/pages to src/layouts
 ---
 
 <Base title="تسجيل الدخول">
-  <h1 style="text-align:center;margin:2rem 0;">تسجيل الدخول</h1>
+  <h1 style="text-align:center;margin:1rem 0;">تسجيل الدخول</h1>
 
-  <div class="card" style="max-width:420px;margin:0 auto;text-align:center;gap:12px;display:grid;">
-    <button id="googleBtn">التسجيل مع Google</button>
+  <p id="msg" style="text-align:center;min-height:1.2rem;"></p>
 
-    <input id="email" type="email" placeholder="البريد الإلكتروني" dir="ltr" />
-    <input id="password" type="password" placeholder="كلمة المرور" dir="ltr" />
+  <div style="display:flex;flex-direction:column;align-items:center;gap:.75rem">
+    <button id="googleBtn" style="padding:.6rem 1rem;border-radius:.5rem;cursor:pointer">
+      المتابعة مع Google
+    </button>
 
-    <div style="display:flex; gap:8px; justify-content:center;">
-      <button id="emailLogin">تسجيل الدخول</button>
-      <button id="emailRegister">تسجيل جديد</button>
+    <input id="email" type="email" placeholder="البريد الإلكتروني"
+           style="padding:.6rem .8rem;border-radius:.5rem;width:260px;">
+    <input id="password" type="password" placeholder="كلمة المرور"
+           style="padding:.6rem .8rem;border-radius:.5rem;width:260px;">
+
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center">
+      <button id="emailLogin" style="padding:.6rem 1rem;border-radius:.5rem;cursor:pointer">
+        تسجيل الدخول
+      </button>
+      <button id="emailRegister" style="padding:.6rem 1rem;border-radius:.5rem;cursor:pointer">
+        إنشاء حساب
+      </button>
+      <button id="logoutBtn" style="padding:.6rem 1rem;border-radius:.5rem;cursor:pointer">
+        تسجيل الخروج
+      </button>
     </div>
-
-    <button id="logoutBtn">تسجيل الخروج</button>
-    <p id="msg" style="min-height:1.5em"></p>
   </div>
 
-  <style>
-    button{ transition: transform 120ms ease, filter 120ms ease; }
-    button:active{ transform: scale(.98); filter: brightness(.95); }
-    button:focus-visible{ outline:2px solid #8ab4f8; outline-offset:2px; }
-    input{ padding:.6rem .8rem; border-radius:.6rem; border:1px solid #444; background:#111; color:#eee; }
-    .card button{ padding:.6rem .8rem; border-radius:.6rem; border:1px solid #444; background:#222; color:#eee; }
-  </style>
-
+  <!-- Use Firebase from the CDN so the browser can load it without bundling -->
   <script type="module">
-  // Load Firebase straight from the CDN (no bundler required)
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
-  import {
-    getAuth,
-    GoogleAuthProvider,
-    signInWithPopup,
-    signInWithEmailAndPassword,
-    createUserWithEmailAndPassword,
-    signOut,
-    onAuthStateChanged,
-  } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      signInWithPopup,
+      signInWithEmailAndPassword,
+      createUserWithEmailAndPassword,
+      signOut,
+      onAuthStateChanged
+    } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
 
-  // Your env vars from Vercel
-  const firebaseConfig = {
-    apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
-    authDomain: import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: import.meta.env.PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: import.meta.env.PUBLIC_FIREBASE_STORAGE_BUCKET,
-    appId: import.meta.env.PUBLIC_FIREBASE_APP_ID,
-  };
+    const cfg = {
+      apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
+      authDomain: import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
+      projectId: import.meta.env.PUBLIC_FIREBASE_PROJECT_ID,
+      storageBucket: import.meta.env.PUBLIC_FIREBASE_STORAGE_BUCKET,
+      appId: import.meta.env.PUBLIC_FIREBASE_APP_ID
+    };
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const googleProvider = new GoogleAuthProvider();
+    const app = initializeApp(cfg);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
 
-  // ---- UI elements (make sure the IDs exist in your HTML) ----
-  const $ = (sel) => document.querySelector(sel);
-  const googleBtn     = $('#googleBtn');
-  const emailLogin    = $('#emailLogin');
-  const emailRegister = $('#emailRegister');
-  const logoutBtn     = $('#logoutBtn');
-  const email         = $('#email');
-  const password      = $('#password');
-  const msg           = $('#msg');
-  const show = (t) => { if (msg) msg.textContent = t || ''; };
-
-  // ---- Handlers ----
-  googleBtn?.addEventListener('click', async () => {
-    show('جاري تسجيل الدخول…');
-    try {
-      await signInWithPopup(auth, googleProvider);
-      show('تم تسجيل الدخول بنجاح ✅');
-    } catch (e) {
-      if (e.code === 'auth/operation-not-allowed') {
-        show('مزود Google غير مُفعّل في Firebase.');
-      } else if (e.code === 'auth/unauthorized-domain') {
-        show('أضف نطاق Vercel إلى Authorized Domains في Firebase.');
-      } else {
-        show('خطأ: ' + (e.message || e.code));
-      }
-      console.error(e);
-    }
-  });
-
-  emailLogin?.addEventListener('click', async () => {
-    show('…');
-    try {
-      await signInWithEmailAndPassword(auth, email.value.trim(), password.value);
-      show('تم تسجيل الدخول ✅');
-    } catch (e) {
-      show('خطأ: ' + (e.message || e.code));
-      console.error(e);
-    }
-  });
-
-  emailRegister?.addEventListener('click', async () => {
-    show('…');
-    try {
-      await createUserWithEmailAndPassword(auth, email.value.trim(), password.value);
-      show('تم إنشاء الحساب وتسجيل الدخول ✅');
-    } catch (e) {
-      show('خطأ: ' + (e.message || e.code));
-      console.error(e);
-    }
-  });
-
-  logoutBtn?.addEventListener('click', async () => {
-    await signOut(auth);
-    show('تم تسجيل الخروج.');
-  });
-
-  onAuthStateChanged(auth, (user) => {
-    if (user) show('مسجّل دخول: ' + (user.email || user.displayName || 'مستخدم'));
-    else show('');
-  });
-</script>
-
-
-    const $ = (sel) => document.querySelector(sel);
+    const $ = (s) => document.querySelector(s);
     const googleBtn     = $('#googleBtn');
     const emailLogin    = $('#emailLogin');
     const emailRegister = $('#emailRegister');
@@ -125,37 +63,37 @@ import Base from '../layouts/Base.astro';
     const email         = $('#email');
     const password      = $('#password');
     const msg           = $('#msg');
-    const show = (t) => { msg.textContent = t || ''; };
+    const show = (t='') => { if (msg) msg.textContent = t; };
 
     googleBtn?.addEventListener('click', async () => {
-      show('جاري تسجيل الدخول...');
+      show('جاري تسجيل الدخول…');
       try {
-        await signInWithPopup(auth, googleProvider);
+        await signInWithPopup(auth, provider);
         show('تم تسجيل الدخول بنجاح ✅');
       } catch (e) {
-        show(e?.message || e?.code || 'خطأ في تسجيل الدخول');
+        show('خطأ: ' + (e.message || e.code));
         console.error(e);
       }
     });
 
     emailLogin?.addEventListener('click', async () => {
-      show('...');
+      show('…');
       try {
         await signInWithEmailAndPassword(auth, email.value.trim(), password.value);
         show('تم تسجيل الدخول ✅');
       } catch (e) {
-        show(e?.message || e?.code || 'خطأ في تسجيل الدخول بالبريد');
+        show('خطأ: ' + (e.message || e.code));
         console.error(e);
       }
     });
 
     emailRegister?.addEventListener('click', async () => {
-      show('...');
+      show('…');
       try {
         await createUserWithEmailAndPassword(auth, email.value.trim(), password.value);
         show('تم إنشاء الحساب وتسجيل الدخول ✅');
       } catch (e) {
-        show(e?.message || e?.code || 'خطأ في إنشاء الحساب');
+        show('خطأ: ' + (e.message || e.code));
         console.error(e);
       }
     });
