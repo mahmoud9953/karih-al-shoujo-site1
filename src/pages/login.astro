@@ -37,7 +37,14 @@ import Base from '../layouts/Base.astro'; // adjust ONLY if your Base.astro path
   </style>
 
   <!-- This is the ONLY script include we need -->
-  <script type="module">
-    import '../lib/login.js';
-  </script>
+  ---
+// (frontmatter can stay empty)
+---
+<!-- other page HTML ... -->
+
+<script type="module">
+  import { setupLoginPage } from '../lib/login.js';  // path is from src/pages/login.astro → src/lib/login.js
+  setupLoginPage();
+</script>
+
 </Base>
