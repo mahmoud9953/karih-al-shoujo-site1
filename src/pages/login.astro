@@ -28,16 +28,94 @@ import Base from '../layouts/Base.astro';
     .card button{ padding:.6rem .8rem; border-radius:.6rem; border:1px solid #444; background:#222; color:#eee; }
   </style>
 
-  <!-- Inline module: no external /login.js will be requested -->
   <script type="module">
-    import { auth, googleProvider } from '../lib/firebase.js';
-    import {
-      signInWithPopup,
-      signInWithEmailAndPassword,
-      createUserWithEmailAndPassword,
-      signOut,
-      onAuthStateChanged
-    } from 'firebase/auth';
+  // Load Firebase straight from the CDN (no bundler required)
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+  import {
+    getAuth,
+    GoogleAuthProvider,
+    signInWithPopup,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged,
+  } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+
+  // Your env vars from Vercel
+  const firebaseConfig = {
+    apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
+    authDomain: import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.PUBLIC_FIREBASE_STORAGE_BUCKET,
+    appId: import.meta.env.PUBLIC_FIREBASE_APP_ID,
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const googleProvider = new GoogleAuthProvider();
+
+  // ---- UI elements (make sure the IDs exist in your HTML) ----
+  const $ = (sel) => document.querySelector(sel);
+  const googleBtn     = $('#googleBtn');
+  const emailLogin    = $('#emailLogin');
+  const emailRegister = $('#emailRegister');
+  const logoutBtn     = $('#logoutBtn');
+  const email         = $('#email');
+  const password      = $('#password');
+  const msg           = $('#msg');
+  const show = (t) => { if (msg) msg.textContent = t || ''; };
+
+  // ---- Handlers ----
+  googleBtn?.addEventListener('click', async () => {
+    show('جاري تسجيل الدخول…');
+    try {
+      await signInWithPopup(auth, googleProvider);
+      show('تم تسجيل الدخول بنجاح ✅');
+    } catch (e) {
+      if (e.code === 'auth/operation-not-allowed') {
+        show('مزود Google غير مُفعّل في Firebase.');
+      } else if (e.code === 'auth/unauthorized-domain') {
+        show('أضف نطاق Vercel إلى Authorized Domains في Firebase.');
+      } else {
+        show('خطأ: ' + (e.message || e.code));
+      }
+      console.error(e);
+    }
+  });
+
+  emailLogin?.addEventListener('click', async () => {
+    show('…');
+    try {
+      await signInWithEmailAndPassword(auth, email.value.trim(), password.value);
+      show('تم تسجيل الدخول ✅');
+    } catch (e) {
+      show('خطأ: ' + (e.message || e.code));
+      console.error(e);
+    }
+  });
+
+  emailRegister?.addEventListener('click', async () => {
+    show('…');
+    try {
+      await createUserWithEmailAndPassword(auth, email.value.trim(), password.value);
+      show('تم إنشاء الحساب وتسجيل الدخول ✅');
+    } catch (e) {
+      show('خطأ: ' + (e.message || e.code));
+      console.error(e);
+    }
+  });
+
+  logoutBtn?.addEventListener('click', async () => {
+    await signOut(auth);
+    show('تم تسجيل الخروج.');
+  });
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) show('مسجّل دخول: ' + (user.email || user.displayName || 'مستخدم'));
+    else show('');
+  });
+</script>
+
 
     const $ = (sel) => document.querySelector(sel);
     const googleBtn     = $('#googleBtn');
