@@ -28,9 +28,68 @@ import Base from '../layouts/Base.astro';
     .card button{ padding:.6rem .8rem; border-radius:.6rem; border:1px solid #444; background:#222; color:#eee; }
   </style>
 
+  <!-- Inline module: no external /login.js will be requested -->
   <script type="module">
-    // IMPORTANT: import the module, don't use <script src="/login.js">
-    import { setupLoginPage } from '../lib/login.js';
-    document.addEventListener('DOMContentLoaded', setupLoginPage);
+    import { auth, googleProvider } from '../lib/firebase.js';
+    import {
+      signInWithPopup,
+      signInWithEmailAndPassword,
+      createUserWithEmailAndPassword,
+      signOut,
+      onAuthStateChanged
+    } from 'firebase/auth';
+
+    const $ = (sel) => document.querySelector(sel);
+    const googleBtn     = $('#googleBtn');
+    const emailLogin    = $('#emailLogin');
+    const emailRegister = $('#emailRegister');
+    const logoutBtn     = $('#logoutBtn');
+    const email         = $('#email');
+    const password      = $('#password');
+    const msg           = $('#msg');
+    const show = (t) => { msg.textContent = t || ''; };
+
+    googleBtn?.addEventListener('click', async () => {
+      show('جاري تسجيل الدخول...');
+      try {
+        await signInWithPopup(auth, googleProvider);
+        show('تم تسجيل الدخول بنجاح ✅');
+      } catch (e) {
+        show(e?.message || e?.code || 'خطأ في تسجيل الدخول');
+        console.error(e);
+      }
+    });
+
+    emailLogin?.addEventListener('click', async () => {
+      show('...');
+      try {
+        await signInWithEmailAndPassword(auth, email.value.trim(), password.value);
+        show('تم تسجيل الدخول ✅');
+      } catch (e) {
+        show(e?.message || e?.code || 'خطأ في تسجيل الدخول بالبريد');
+        console.error(e);
+      }
+    });
+
+    emailRegister?.addEventListener('click', async () => {
+      show('...');
+      try {
+        await createUserWithEmailAndPassword(auth, email.value.trim(), password.value);
+        show('تم إنشاء الحساب وتسجيل الدخول ✅');
+      } catch (e) {
+        show(e?.message || e?.code || 'خطأ في إنشاء الحساب');
+        console.error(e);
+      }
+    });
+
+    logoutBtn?.addEventListener('click', async () => {
+      await signOut(auth);
+      show('تم تسجيل الخروج.');
+    });
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) show('مسجّل دخول: ' + (user.email || user.displayName || 'مستخدم'));
+      else show('');
+    });
   </script>
 </Base>
