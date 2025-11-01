@@ -3,108 +3,35 @@ import Base from '../layouts/Base.astro';
 ---
 
 <Base title="تسجيل الدخول">
-  <h1 style="text-align:center;margin-top:2rem;">تسجيل الدخول</h1>
+  <h1 style="text-align:center;margin:2rem 0;">تسجيل الدخول</h1>
 
-  <div style="display:flex;flex-direction:column;gap:12px;align-items:center;margin-top:1.5rem;">
-    <button id="googleBtn" style="padding:.7rem 1.2rem;border-radius:.6rem;">المتابعة مع Google</button>
-
-    <div style="width:320px;max-width:90%;margin-top:1rem;">
-      <label style="display:block;margin:.25rem 0;">البريد الإلكتروني</label>
-      <input id="email" type="email" placeholder="you@example.com" style="width:100%;padding:.6rem;border-radius:.5rem;" />
-      <label style="display:block;margin:.5rem 0 .25rem;">كلمة المرور</label>
-      <input id="password" type="password" placeholder="••••••••" style="width:100%;padding:.6rem;border-radius:.5rem;" />
-
-      <div style="display:flex;gap:8px;margin-top:.8rem;">
-        <button id="emailLogin" style="padding:.5rem 1rem;border-radius:.5rem;">دخول بالبريد</button>
-        <button id="emailRegister" style="padding:.5rem 1rem;border-radius:.5rem;">تسجيل حساب</button>
-      </div>
-    </div>
-
-    <button id="logoutBtn" style="padding:.5rem 1rem;border-radius:.5rem;margin-top:1rem;">تسجيل الخروج</button>
-
-    <p id="msg" style="margin-top:.5rem;color:#bbb;text-align:center;"></p>
+  <div style="display:flex;gap:1rem;justify-content:center;margin-bottom:1rem">
+    <button id="googleBtn" class="btn">التسجيل مع Google</button>
+    <button id="logoutBtn" class="btn">تسجيل الخروج</button>
   </div>
 
-  <script type="module">
-    import { auth, googleProvider } from '../../lib/firebase.js';
-    import {
-      signInWithPopup,
-      GoogleAuthProvider,
-      signInWithEmailAndPassword,
-      createUserWithEmailAndPassword,
-      signOut,
-      onAuthStateChanged,
-    } from 'firebase/auth';
+  <div style="max-width:360px;margin:0 auto;text-align:right">
+    <label for="email">البريد الإلكتروني</label>
+    <input id="email" type="email" style="width:100%;padding:.6rem;margin:.3rem 0 1rem;background:#111;color:#fff;border:1px solid #444;border-radius:8px;" />
 
-    const $ = (sel) => document.querySelector(sel);
-    const googleBtn = $('#googleBtn');
-    const emailLogin = $('#emailLogin');
-    const emailRegister = $('#emailRegister');
-    const logoutBtn = $('#logoutBtn');
-    const email = $('#email');
-    const password = $('#password');
-    const msg = $('#msg');
+    <label for="password">كلمة المرور</label>
+    <input id="password" type="password" style="width:100%;padding:.6rem;margin:.3rem 0 1rem;background:#111;color:#fff;border:1px solid #444;border-radius:8px;" />
 
-    const show = (t) => { msg.textContent = t || ''; };
+    <div style="display:flex;gap:.5rem;justify-content:flex-start;margin-bottom:1rem">
+      <button id="emailLogin" class="btn">تسجيل الدخول بالبريد</button>
+      <button id="emailRegister" class="btn">تسجيل حساب جديد</button>
+    </div>
 
-    googleBtn?.addEventListener('click', async () => {
-      show('جاري تسجيل الدخول...');
-      try {
-        await signInWithPopup(auth, googleProvider);
-        show('تم تسجيل الدخول بنجاح ✅');
-      } catch (e) {
-        if (e.code === 'auth/operation-not-allowed') {
-          show('مزود Google غير مُفعل في Firebase.');
-        } else if (e.code === 'auth/unauthorized-domain') {
-          show('يجب إضافة نطاق Vercel إلى Authorized Domains في Firebase.');
-        } else {
-          show('خطأ: ' + (e.message || e.code));
-        }
-        console.error(e);
-      }
-    });
+    <p id="msg" style="min-height:1.4rem;color:#9cf"></p>
+  </div>
 
-    emailLogin?.addEventListener('click', async () => {
-      show('...');
-      try {
-        await signInWithEmailAndPassword(auth, email.value.trim(), password.value);
-        show('تم تسجيل الدخول ✅');
-      } catch (e) {
-        if (e.code === 'auth/user-not-found') show('لا يوجد حساب بهذا البريد.');
-        else if (e.code === 'auth/wrong-password') show('كلمة المرور غير صحيحة.');
-        else if (e.code === 'auth/invalid-email') show('بريد إلكتروني غير صالح.');
-        else show('خطأ: ' + (e.message || e.code));
-        console.error(e);
-      }
-    });
+  <!-- Load the module from the correct absolute path -->
+  <script type="module" src="/src/lib/login.js"></script>
 
-    emailRegister?.addEventListener('click', async () => {
-      show('...');
-      try {
-        await createUserWithEmailAndPassword(auth, email.value.trim(), password.value);
-        show('تم إنشاء الحساب وتسجيل الدخول ✅');
-      } catch (e) {
-        if (e.code === 'auth/email-already-in-use') show('البريد مستخدم بالفعل.');
-        else if (e.code === 'auth/weak-password') show('كلمة المرور ضعيفة.');
-        else show('خطأ: ' + (e.message || e.code));
-        console.error(e);
-      }
-    });
-
-    logoutBtn?.addEventListener('click', async () => {
-      await signOut(auth);
-      show('تم تسجيل الخروج.');
-    });
-
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        show('مسجّل دخول: ' + (user.email || user.displayName || 'مستخدم'));
-      } else {
-        show('');
-      }
-    });
-  <script type="module">
-  import { setupLoginPage } from '../../lib/login.js';
-  setupLoginPage();
-</script>
+  <style>
+    .btn{
+      padding:.7rem 1rem;border-radius:10px;border:1px solid #555;background:#222;color:#fff;cursor:pointer
+    }
+    .btn:hover{background:#2b2b2b}
+  </style>
 </Base>

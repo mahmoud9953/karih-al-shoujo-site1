@@ -1,6 +1,6 @@
 // src/lib/firebase.js
-import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
+import { initializeApp } from 'firebase/app';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
@@ -12,6 +12,4 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const GoogleProvider = new GoogleAuthProvider();
-
-export { onAuthStateChanged, signInWithPopup, signOut };
+export const googleProvider = new GoogleAuthProvider();
