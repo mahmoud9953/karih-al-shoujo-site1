@@ -1,5 +1,5 @@
 ---
-import "../styles/theme.css";   // ✅ bundle CSS (don’t <link> to /src/*)
+import "../styles/theme.css";
 const { title = "موقع الروايات", description = "" } = Astro.props;
 ---
 
@@ -16,9 +16,6 @@ const { title = "موقع الروايات", description = "" } = Astro.props;
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 
-    <!-- Theme -->
-    <link rel="stylesheet" href="/src/styles/theme.css" />
-  </head>
   <body>
     <header style="border-bottom:1px solid var(--stroke); position:sticky; top:0; backdrop-filter: blur(8px); background:rgba(11,13,18,.75); z-index:50;">
       <nav class="container" style="display:flex; align-items:center; justify-content:space-between; padding:12px 0;">

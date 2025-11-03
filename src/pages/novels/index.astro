@@ -1,34 +1,14 @@
 ---
-import Base from "@/layouts/Base.astro";
-
-// Load ALL markdown files eagerly at build time (Vercel-safe)
-const modules = import.meta.glob("/src/content/novels/**/*.md", { eager: true });
-
-type FM = { slug?: string; novel?: string; chapter?: number; title?: string };
-
-const bySlug = new Map<string, FM[]>();
-
-for (const mod of Object.values(modules) as any[]) {
-  const fm: FM = mod.frontmatter || {};
-  if (!fm.slug) continue;
-  if (!bySlug.has(fm.slug)) bySlug.set(fm.slug, []);
-  bySlug.get(fm.slug)!.push(fm);
-}
-
-// sort chapters inside each novel
-for (const arr of bySlug.values()) {
-  arr.sort((a, b) => (a.chapter ?? 0) - (b.chapter ?? 0));
-}
+import Base from "../layouts/Base.astro";
+const pageTitle = "الرئيسية";
 ---
 
-<Base title="الروايات" description="كل الروايات المتاحة">
-  <h1>الروايات</h1>
-  <ul class="toc" style="text-align:right; margin-top:1rem;">
-    {Array.from(bySlug.entries()).map(([slug, chapters]) => (
-      <li style="margin:.5rem 0;">
-        <a href={`/novels/${slug}`}>{chapters[0]?.novel || slug}</a>
-        <span class="muted"> — {chapters.length} فصول</span>
-      </li>
-    ))}
-  </ul>
+<Base title={pageTitle}>
+  <section dir="rtl" style="padding:80px 0 40px;">
+    <div class="container">
+      <h1 style="margin:0 0 8px;">مرحبًا بك</h1>
+      <p class="muted" style="margin:0 0 16px;">صفحة رئيسية تجريبية — تعمل الآن.</p>
+      <a class="btn" href="/novels/karih-al-shoujo">اذهب إلى الرواية</a>
+    </div>
+  </section>
 </Base>
