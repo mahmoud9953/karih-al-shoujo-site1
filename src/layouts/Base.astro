@@ -1,82 +1,50 @@
+---
+import "../styles/theme.css";   // ✅ bundle CSS (don’t <link> to /src/*)
+const { title = "موقع الروايات", description = "" } = Astro.props;
+---
 
----
-const { title = 'موقع الروايات', description = 'قراءة سلسة وسريعة عبر CDN', url = '/', ogImage = '/favicon.svg' } = Astro.props;
----
-<!DOCTYPE html>
+
 <html lang="ar" dir="rtl">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
-    <meta name="description" content={description} />
-    <link rel="icon" href="/favicon.svg" />
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
-    <meta property="og:image" content={ogImage} />
-    <meta name="color-scheme" content="light dark" />
-    <style>
-      :root { --bg: #ffffff; --fg: #111111; --muted:#666; --link:#0a58ca; }
-      @media (prefers-color-scheme: dark) {
-        :root { --bg: #0b0b0b; --fg: #f3f3f3; --muted:#bbb; --link:#8ab4f8; }
-      }
-      * { box-sizing: border-box; }
-      html { scroll-behavior: smooth; }
-      body { margin: 0; background: var(--bg); color: var(--fg); font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Naskh Arabic", "Noto Kufi Arabic", "Amiri", "Arabic Typesetting", sans-serif; }
-      a { color: var(--link); text-decoration: none; }
-      a:hover { text-decoration: underline; }
-      .container { max-width: 74ch; margin-inline: auto; padding: 1.25rem; }
-      header.site { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1rem 0; }
-      nav a { margin-inline: 0.5rem; }
-      .card { background: rgba(127,127,127,0.06); border: 1px solid rgba(127,127,127,0.2); padding: 1rem; border-radius: 14px; }
-      .muted { color: var(--muted); }
-      .chapter { line-height: 1.95; font-size: 1.15rem; }
-      .chapter p { margin: 1rem 0; }
-      .chapter-nav { display:flex; justify-content:space-between; gap:1rem; margin-top:2rem; }
-      .chapter-nav a { padding:0.6rem 1rem; border:1px solid rgba(127,127,127,0.3); border-radius:12px; background:rgba(127,127,127,0.08); }
-      .toc li { margin: 0.4rem 0; }
-      footer { margin: 3rem 0 1rem; font-size: 0.95rem; }
-      .badge { display:inline-block; padding: .2rem .55rem; border-radius: 999px; border:1px solid rgba(127,127,127,0.3); font-size:.8rem; }
-      .controls { display:flex; gap:.5rem; align-items:center; }
-      .search { width:100%; padding:.7rem 1rem; border-radius:12px; border:1px solid rgba(127,127,127,0.3); background:rgba(127,127,127,0.05); }
-    </style>
-    <script>
-      // Dark mode toggle persistence
-      try {
-        const saved = localStorage.getItem('theme');
-        if (saved) document.documentElement.dataset.theme = saved;
-      } catch {}
-    </script>
+    {description && <meta name="description" content={description} />}
+
+    <!-- Google Fonts (Arabic friendly) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Theme -->
+    <link rel="stylesheet" href="/src/styles/theme.css" />
   </head>
   <body>
-    <div class="container">
-      <header class="site">
-        <a href="/" style="display:flex;gap:.6rem;align-items:center">
-          <img src="/favicon.svg" alt="logo" width="28" height="28" />
+    <header style="border-bottom:1px solid var(--stroke); position:sticky; top:0; backdrop-filter: blur(8px); background:rgba(11,13,18,.75); z-index:50;">
+      <nav class="container" style="display:flex; align-items:center; justify-content:space-between; padding:12px 0;">
+        <a href="/" style="display:flex; gap:10px; align-items:center; text-decoration:none; color:var(--text);">
+          <svg viewBox="0 0 48 48" width="28" height="28" aria-hidden="true">
+            <circle cx="24" cy="24" r="22" fill="none" stroke="#8b5cf6" stroke-width="2"/>
+            <path d="M24 10v28M14 18h20M14 30h20" stroke="#06b6d4" stroke-width="2" stroke-linecap="round"/>
+          </svg>
           <strong>موقع الروايات</strong>
         </a>
-        <nav>
-          <a href="/novels">الروايات</a>
-          <a href="/">الرئيسية</a>
-        </nav>
-      </header>
+        <div style="display:flex; gap:14px;">
+          <a href="/" style="color:var(--text); text-decoration:none;">الرئيسية</a>
+          <a href="/novels" style="color:var(--text); text-decoration:none;">الروايات</a>
+          <a href="/login" class="btn btn-ghost" style="padding:8px 12px;">تسجيل الدخول</a>
+        </div>
+      </nav>
+    </header>
+
+    <main>
       <slot />
-      <footer class="muted">
-        © {new Date().getFullYear()} — موقع الروايات · مبنيّ بـ Astro · أداء CDN كامل
-      </footer>
-    </div>
-    <script>
-      // Simple theme toggle on double-press "T"
-      let lastT=0; document.addEventListener('keydown', (e)=>{
-        if(e.key.toLowerCase()==='t'){
-          const now=Date.now();
-          if(now-lastT<400){
-            const cur = document.documentElement.dataset.theme==='dark'?'light':'dark';
-            document.documentElement.dataset.theme = cur;
-            try{localStorage.setItem('theme',cur);}catch{}
-          }
-          lastT=now;
-        }
-      });
-    </script>
+    </main>
+
+    <footer style="border-top:1px solid var(--stroke); margin-top:40px;">
+      <div class="container" style="padding:14px 0; color:var(--muted);">
+        أداء CDN كامل • Astro • ٢٠٢٥ ©
+      </div>
+    </footer>
   </body>
 </html>
