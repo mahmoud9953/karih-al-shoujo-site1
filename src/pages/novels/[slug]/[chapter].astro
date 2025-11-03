@@ -57,22 +57,22 @@ const titleText = `${fm.title || ("الفصل " + chapter)} — ${fm.novel || sl
     <Fragment set:html={await (cur.mod as any).compiledContent()} />
 
     <!-- Toolbar: previous | chapter picker | next -->
-<div class="chapter-toolbar" dir="rtl">
-  <!-- Previous -->
-  {prev
-    ? <a class="btn-nav" rel="prev" href={`/novels/${slug}/${prev}`}> ➡️السابق</a>
-    : <button class="btn-nav disabled" disabled> ➡️السابق</button>}
+<div class="glass" style="
+  margin:16px 0; padding:10px;
+  display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;
+">
+  <a class="btn btn-ghost" href={prevUrl ?? "#"} aria-disabled={!prevUrl} style={prevUrl ? "" : "opacity:.5; pointer-events:none;"}>السابق</a>
 
-  <!-- Chapter picker -->
-  <div class="chapter-picker">
-    <label for="chapterSelect" class="picker-label">اختر فصل:</label>
-    <select id="chapterSelect" class="picker-select"
-            onchange={`location.href='/novels/${slug}/' + this.value`}>
-      {allChapters.map((n) => (
-        <option value={n} selected={n === Number(chapter)}>الفصل {n}</option>
-      ))}
+  <form action="/novels/[slug]" style="display:flex; gap:8px; align-items:center;">
+    <label class="muted small">اختيار فصل</label>
+    <select name="c" onchange="location.href=this.value" style="background:#0e1117; color:var(--text); border:1px solid #1b2330; border-radius:10px; padding:8px;">
+      {chapters.map(c => <option value={c.url} selected={c.number===current}>{c.title}</option>)}
     </select>
-  </div>
+  </form>
+
+  <a class="btn" href={nextUrl ?? "#"} aria-disabled={!nextUrl} style={nextUrl ? "" : "opacity:.5; pointer-events:none;"}>التالي</a>
+</div>
+
 
   <!-- Next -->
   {next
