@@ -1,135 +1,116 @@
 ---
-import Base from "@/layouts/Base.astro";
+import Base from "../../../layouts/Base.astro";
 
-// Build all /novels/<slug>/<chapter> paths at build time
-export async function getStaticPaths() {
-  const all = import.meta.glob("/src/content/novels/**/*.md", { eager: true });
-  const paths: { params: { slug: string; chapter: string } }[] = [];
+// Params
+const { slug, chapter } = Astro.params; // e.g. slug="karih-al-shoujo", chapter="3" or "3.5"
 
-  for (const mod of Object.values(all) as any[]) {
-    const fm = mod.frontmatter || {};
-    if (fm.slug && (fm.chapter ?? null) != null) {
-      paths.push({ params: { slug: String(fm.slug), chapter: String(fm.chapter) } });
-    }
-  }
-  return paths;
-}
-
-const { slug, chapter } = Astro.params;
-
-// Load all chapters (eager), then find current/prev/next
+// Load all chapters (eager so it works at build time)
 const modules = import.meta.glob("/src/content/novels/**/*.md", { eager: true });
-type FM = { title?: string; novel?: string; slug?: string; chapter?: number; summary?: string; publishedAt?: string };
 
-const list: { fm: FM; mod: any }[] = [];
+// Extract frontmatter + component from each markdown
+type FM = {
+  title?: string;
+  novel?: string;
+  slug?: string;
+  chapter?: number | string;
+  summary?: string;
+};
+type Entry = { frontmatter: FM; default: any };
+
+const allEntries: Entry[] = [];
 for (const mod of Object.values(modules) as any[]) {
-  const fm: FM = mod.frontmatter || {};
-  if (fm.slug === slug) list.push({ fm, mod });
+  const fm: FM = mod.frontmatter ?? {};
+  const Comp = mod.default;
+  if (fm && Comp) {
+    allEntries.push({ frontmatter: fm, default: Comp });
+  }
 }
-list.sort((a, b) => (a.fm.chapter ?? 0) - (b.fm.chapter ?? 0));
 
-const chNum = Number(chapter);
-const idx = list.findIndex((x) => Number(x.fm.chapter) === chNum);
+// Filter to current novel
+const list = allEntries
+  .filter(e => String(e.frontmatter.slug) === String(slug))
+  .map(e => ({
+    num: e.frontmatter.chapter,
+    title: e.frontmatter.title ?? "",
+    comp: e.default,
+    url: `/novels/${slug}/${e.frontmatter.chapter}`
+  }));
+
+// Sort chapters (numeric first, falls back to string compare)
+const toNum = (v: any) => (isNaN(parseFloat(String(v))) ? null : parseFloat(String(v)));
+list.sort((a, b) => {
+  const na = toNum(a.num);
+  const nb = toNum(b.num);
+  if (na != null && nb != null) return na - nb;
+  return String(a.num).localeCompare(String(b.num), "ar");
+});
+
+// Find current chapter
+const idx = list.findIndex(c => String(c.num) === String(chapter));
 if (idx === -1) {
   throw new Error(`لم يتم العثور على الفصل ${chapter} في الرواية ${slug}`);
 }
 
-const cur = list[idx];
-const prev = idx > 0 ? list[idx - 1].fm.chapter : null;
-const next = idx < list.length - 1 ? list[idx + 1].fm.chapter : null;
-const allChapters = list.map((x) => Number(x.fm.chapter)).filter(Number.isFinite).sort((a,b)=>a-b);
+// Current entry
+const Current = list[idx].comp;
+const currentTitle = list[idx].title || `الفصل ${list[idx].num}`;
 
+// Neighbors
+const prevUrl = idx > 0 ? list[idx - 1].url : null;
+const nextUrl = idx < list.length - 1 ? list[idx + 1].url : null;
 
-const fm = cur.fm;
-const titleText = `${fm.title || ("الفصل " + chapter)} — ${fm.novel || slug}`;
+// For selector
+const chapters = list.map(c => ({ number: c.num, title: c.title || `الفصل ${c.num}`, url: c.url }));
+const current = list[idx].num;
+
+const pageTitle = `${currentTitle} — ${slug}`;
 ---
 
-<Base title={titleText} description={fm.summary || titleText}>
-  <article class="chapter" id="reader">
-    <h1>{fm.title || ("الفصل " + chapter)}</h1>
-    <p class="muted">
-      رواية: <span class="badge">{fm.novel || slug}</span> ·
-      الفصل: <span class="badge">{fm.chapter || chapter}</span> ·
-      <span class="badge">{fm.publishedAt || ""}</span>
-    </p>
+<Base title={pageTitle}>
+  <article class="container" dir="rtl" style="padding:24px 0 14px;">
+    <h1 style="margin:.2rem 0 1rem;">{currentTitle}</h1>
 
-    <!-- Render markdown content -->
-    <Fragment set:html={await (cur.mod as any).compiledContent()} />
+    <!-- Control bar -->
+    <div class="glass" style="margin:16px 0; padding:10px; display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;">
+      <a class="btn btn-ghost" href={prevUrl ?? "#"} aria-disabled={!prevUrl} style={prevUrl ? "" : "opacity:.5; pointer-events:none;"}>السابق</a>
 
-    <!-- Toolbar: previous | chapter picker | next -->
-<div class="glass" style="
-  margin:16px 0; padding:10px;
-  display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;
-">
-  <a class="btn btn-ghost" href={prevUrl ?? "#"} aria-disabled={!prevUrl} style={prevUrl ? "" : "opacity:.5; pointer-events:none;"}>السابق</a>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <label class="muted small">اختيار فصل</label>
+        <select onchange={`location.href=this.value`} style="background:#0e1117; color:var(--text); border:1px solid #1b2330; border-radius:10px; padding:8px;">
+          {chapters.map(c => (
+            <option value={c.url} selected={String(c.number)===String(current)}>{c.title}</option>
+          ))}
+        </select>
+      </div>
 
-  <form action="/novels/[slug]" style="display:flex; gap:8px; align-items:center;">
-    <label class="muted small">اختيار فصل</label>
-    <select name="c" onchange="location.href=this.value" style="background:#0e1117; color:var(--text); border:1px solid #1b2330; border-radius:10px; padding:8px;">
-      {chapters.map(c => <option value={c.url} selected={c.number===current}>{c.title}</option>)}
-    </select>
-  </form>
+      <a class="btn" href={nextUrl ?? "#"} aria-disabled={!nextUrl} style={nextUrl ? "" : "opacity:.5; pointer-events:none;"}>التالي</a>
+    </div>
 
-  <a class="btn" href={nextUrl ?? "#"} aria-disabled={!nextUrl} style={nextUrl ? "" : "opacity:.5; pointer-events:none;"}>التالي</a>
-</div>
+    <!-- Chapter content -->
+    <div class="chapter-body">
+      <Current />
+    </div>
 
+    <!-- Control bar (bottom) -->
+    <div class="glass" style="margin:16px 0; padding:10px; display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;">
+      <a class="btn btn-ghost" href={prevUrl ?? "#"} aria-disabled={!prevUrl} style={prevUrl ? "" : "opacity:.5; pointer-events:none;"}>السابق</a>
 
-  <!-- Next -->
-  {next
-    ? <a class="btn-nav" rel="next" href={`/novels/${slug}/${next}`}>التالي ⬅️</a>
-    : <button class="btn-nav disabled" disabled>التالي ⬅️</button>}
-</div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <label class="muted small">اختيار فصل</label>
+        <select onchange={`location.href=this.value`} style="background:#0e1117; color:var(--text); border:1px solid #1b2330; border-radius:10px; padding:8px;">
+          {chapters.map(c => (
+            <option value={c.url} selected={String(c.number)===String(current)}>{c.title}</option>
+          ))}
+        </select>
+      </div>
 
-<!-- Keep a clean link to the TOC under the toolbar (optional) -->
-<div style="margin-top:.75rem; text-align:center;">
-  <a href={`/novels/${slug}`} class="btn-nav" style="background:#1f2329;">فهرس الفصول</a>
-</div>
+      <a class="btn" href={nextUrl ?? "#"} aria-disabled={!nextUrl} style={nextUrl ? "" : "opacity:.5; pointer-events:none;"}>التالي</a>
+    </div>
   </article>
 </Base>
+
 <style>
-  .chapter-toolbar{
-    margin-top: 1.25rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: .75rem;
-    padding: .85rem 1rem;
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 14px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
-    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
-    backdrop-filter: blur(6px);
-  }
-  .btn-nav{
-    display:inline-block;
-    padding: .55rem .9rem;
-    border-radius: 10px;
-    text-decoration: none;
-    background: #2b2f36;
-    color: #ffffff;
-    border: 1px solid rgba(255,255,255,0.12);
-    transition: transform .08s ease, background .2s ease, border-color .2s ease;
-    font-weight: 600;
-    white-space: nowrap;
-  }
-  .btn-nav:hover{ background:#343a45; border-color:rgba(255,255,255,0.2); transform: translateY(-1px);}
-  .btn-nav.disabled{ opacity: .5; cursor: not-allowed; background:#2b2f36; }
-
-  .chapter-picker{
-    display:flex; align-items:center; gap:.5rem;
-    background: rgba(0,0,0,0.15);
-    padding:.4rem .6rem; border-radius: 10px; border:1px solid rgba(255,255,255,0.10);
-  }
-  .picker-label{ font-size:.95rem; opacity:.9; }
-  .picker-select{
-    padding:.45rem .55rem; border-radius:8px; border:1px solid rgba(255,255,255,0.18);
-    background:#1f2329; color:#fff; min-width: 9rem; outline:none;
-  }
-  .picker-select:focus{ border-color:#7aa2ff; box-shadow: 0 0 0 2px rgba(122,162,255,0.25); }
-  
-  @media (max-width: 520px){
-    .chapter-toolbar{ flex-wrap: wrap; justify-content: center; gap:.6rem; }
-    .chapter-picker{ width:100%; justify-content:center; }
-  }
+.chapter-body :where(p, h2, h3, ul, ol, blockquote){
+  line-height: 1.9;
+}
 </style>
-
