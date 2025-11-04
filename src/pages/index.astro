@@ -1,46 +1,51 @@
 ---
-import Base from "@/layouts/Base.astro";
-<section class="hero" dir="rtl" style="padding:80px 0 40px; background:
-  linear-gradient(180deg, rgba(8,10,16,.0), rgba(8,10,16,.35)),
-  url('/cover3.png') center/cover no-repeat;">
-  <div class="container glass" style="padding:24px;">
-    <h1 style="font-size:36px; margin:0 0 8px;">مرحبًا بك في عالم الغموض</h1>
-    <p class="muted" style="max-width:60ch;">
-      كل شيء ضبابي… حتى الحقيقة. ادخل عالم «كارِه الشوجو» حيث تتقاطع القوى والقدر.
-    </p>
-    <div style="display:flex; gap:12px; margin-top:14px;">
-      <a class="btn" href="/novels/karih-al-shoujo">ابدأ القراءة</a>
-      <a class="btn btn-ghost" href="/novels">كل الروايات</a>
-    </div>
-  </div>
-</section>
+import Base from "../layouts/Base.astro"; // use relative path; alias "@" may not be configured
 
 // Load chapters for "karih-al-shoujo"
 const all = import.meta.glob("/src/content/novels/**/*.md", { eager: true });
-type FM = { title?: string; novel?: string; slug?: string; chapter?: number; summary?: string };
+
+type FM = {
+  title?: string;
+  novel?: string;
+  slug?: string;
+  chapter?: number;
+  summary?: string;
+};
+
 const chapters: FM[] = [];
 for (const mod of Object.values(all) as any[]) {
-  const fm: FM = mod.frontmatter || {};
+  const fm: FM = (mod as any).frontmatter ?? {};
   if (fm.slug === "karih-al-shoujo") chapters.push(fm);
 }
-chapters.sort((a,b)=>(a.chapter??0)-(b.chapter??0));
-const novelTitle = chapters[0]?.novel || "كاره الشوجو";
+chapters.sort((a, b) => (a.chapter ?? 0) - (b.chapter ?? 0));
+
+const novelTitle = chapters[0]?.novel ?? "كاره الشوجو";
 ---
 
 <Base title="الرئيسية — موقع الروايات" description={`اقرأ ${novelTitle} فصلًا فصلًا بسرعة CDN`}>
-  <h1>مرحبًا بك 👋</h1>
+  <!-- Hero -->
+  <section class="hero" dir="rtl" style="padding:80px 0 40px; background:
+    linear-gradient(180deg, rgba(8,10,16,.0), rgba(8,10,16,.35)),
+    url('/cover3.png') center/cover no-repeat;">
+    <div class="container glass" style="padding:24px;">
+      <h1 style="font-size:36px; margin:0 0 8px;">مرحبًا بك في عالم الغموض</h1>
+      <p class="muted" style="max-width:60ch;">
+        كل شيء ضبابي… حتى الحقيقة. ادخل عالم «كارِه الشوجو» حيث تتقاطع القوى والقدر.
+      </p>
+      <div style="display:flex; gap:12px; margin-top:14px;">
+        <a class="btn" href="/novels/karih-al-shoujo">ابدأ القراءة</a>
+        <a class="btn btn-ghost" href="/novels">كل الروايات</a>
+      </div>
+    </div>
+  </section>
 
-  <p style="font-family:'Amiri', serif; font-size:1.4rem;">
-    🌙 غُص في عالم «كاره الشوجو» — رواية تمزج الغموض بالمشاعر في رحلة لا تُنسى.
-  </p>
-<p style="margin-top:16px;"><a href="/login">تسجيل الدخول</a></p>
-
+  <!-- TOC -->
   <div class="card" style="margin-top:1rem; text-align:center;">
     <img src="/cover3.png" alt="غلاف رواية كاره الشوجو" style="width:100%;border-radius:16px;margin-bottom:1rem;"/>
     <strong style="display:block; font-size:1.2rem; margin-bottom:.4rem;">رواية كاره الشوجو</strong>
 
     <ol class="toc" id="toc" style="text-align:right; margin:0 auto; max-width:64ch;">
-      {chapters.map((c)=>(
+      {chapters.map((c) => (
         <li style="margin:.5rem 0;">
           <a href={`/novels/${c.slug}/${c.chapter}`}>
             الفصل {c.chapter}: {c.title ?? `الفصل ${c.chapter}`}
