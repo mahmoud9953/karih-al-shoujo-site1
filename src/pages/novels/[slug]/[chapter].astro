@@ -1,13 +1,23 @@
 ---
 import Base from "../../../layouts/Base.astro";
 
-// Params
-const { slug, chapter } = Astro.params; // e.g. slug="karih-al-shoujo", chapter="3" or "3.5"
+// 1) Tell Astro which chapter pages to generate (all slugs/chapters)
+export async function getStaticPaths() {
+  const mods = import.meta.glob("/src/content/novels/**/*.md", { eager: true });
+  const paths = [];
+  for (const mod of Object.values(mods) as any[]) {
+    const fm = mod.frontmatter ?? {};
+    if (fm.slug && fm.chapter != null) {
+      paths.push({ params: { slug: String(fm.slug), chapter: String(fm.chapter) } });
+    }
+  }
+  return paths;
+}
 
-// Load all chapters (eager so it works at build time)
-const modules = import.meta.glob("/src/content/novels/**/*.md", { eager: true });
+// 2) Build-time data for the current page
+const { slug, chapter } = Astro.params;
 
-// Extract frontmatter + component from each markdown
+// Load all chapters (statically) and prepare list for navigation
 type FM = {
   title?: string;
   novel?: string;
@@ -17,13 +27,13 @@ type FM = {
 };
 type Entry = { frontmatter: FM; default: any };
 
+const modules = import.meta.glob("/src/content/novels/**/*.md", { eager: true });
 const allEntries: Entry[] = [];
+
 for (const mod of Object.values(modules) as any[]) {
   const fm: FM = mod.frontmatter ?? {};
   const Comp = mod.default;
-  if (fm && Comp) {
-    allEntries.push({ frontmatter: fm, default: Comp });
-  }
+  if (fm && Comp) allEntries.push({ frontmatter: fm, default: Comp });
 }
 
 // Filter to current novel
@@ -33,10 +43,10 @@ const list = allEntries
     num: e.frontmatter.chapter,
     title: e.frontmatter.title ?? "",
     comp: e.default,
-    url: `/novels/${slug}/${e.frontmatter.chapter}`
+    url: `/novels/${slug}/${e.frontmatter.chapter}`,
   }));
 
-// Sort chapters (numeric first, falls back to string compare)
+// Sort chapters robustly
 const toNum = (v: any) => (isNaN(parseFloat(String(v))) ? null : parseFloat(String(v)));
 list.sort((a, b) => {
   const na = toNum(a.num);
@@ -51,16 +61,19 @@ if (idx === -1) {
   throw new Error(`لم يتم العثور على الفصل ${chapter} في الرواية ${slug}`);
 }
 
-// Current entry
 const Current = list[idx].comp;
 const currentTitle = list[idx].title || `الفصل ${list[idx].num}`;
 
-// Neighbors
+// Prev/Next
 const prevUrl = idx > 0 ? list[idx - 1].url : null;
 const nextUrl = idx < list.length - 1 ? list[idx + 1].url : null;
 
-// For selector
-const chapters = list.map(c => ({ number: c.num, title: c.title || `الفصل ${c.num}`, url: c.url }));
+// Selector list
+const chapters = list.map(c => ({
+  number: c.num,
+  title: c.title || `الفصل ${c.num}`,
+  url: c.url,
+}));
 const current = list[idx].num;
 
 const pageTitle = `${currentTitle} — ${slug}`;
@@ -70,7 +83,7 @@ const pageTitle = `${currentTitle} — ${slug}`;
   <article class="container" dir="rtl" style="padding:24px 0 14px;">
     <h1 style="margin:.2rem 0 1rem;">{currentTitle}</h1>
 
-    <!-- Control bar -->
+    <!-- Top controls -->
     <div class="glass" style="margin:16px 0; padding:10px; display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;">
       <a class="btn btn-ghost" href={prevUrl ?? "#"} aria-disabled={!prevUrl} style={prevUrl ? "" : "opacity:.5; pointer-events:none;"}>السابق</a>
 
@@ -91,7 +104,7 @@ const pageTitle = `${currentTitle} — ${slug}`;
       <Current />
     </div>
 
-    <!-- Control bar (bottom) -->
+    <!-- Bottom controls -->
     <div class="glass" style="margin:16px 0; padding:10px; display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;">
       <a class="btn btn-ghost" href={prevUrl ?? "#"} aria-disabled={!prevUrl} style={prevUrl ? "" : "opacity:.5; pointer-events:none;"}>السابق</a>
 
