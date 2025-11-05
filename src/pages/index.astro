@@ -89,25 +89,53 @@ const heroDesc  = hero?.description ?? "كل شيء ضبابي… حتى الح�
     </div>
   </section>
 
-  <!-- LATEST CHAPTERS -->
+    <!-- LATEST (compact: cover + one sentence) -->
   {latest.length > 0 && (
-    <section style="margin-top:18px">
-      <h2 style="margin:0 0 10px;">آخر الفصول</h2>
-      <ul class="card" style="list-style:none; padding:12px 14px; margin:0;">
-        {latest.map(item => (
-          <li style="padding:8px 4px; border-bottom:1px solid var(--stroke); display:flex; justify-content:space-between; align-items:center;">
-            <a href={`/novels/${item.slug}/${item.chapter}`}>
-              {item.title}
-            </a>
-            <span class="muted" style="font-size:.92rem;">{item.slug} • الفصل {item.chapter}</span>
-          </li>
-        ))}
-        <li style="padding:8px 4px; text-align:center;">
-          <a class="btn btn-ghost" href="/novels">عرض كل الروايات</a>
-        </li>
-      </ul>
+    <section class="card" style="margin-top:18px; padding:12px;">
+      <div class="latest-wrap">
+        <img
+          src={heroCover}
+          alt={`غلاف ${novelTitle}`}
+          class="latest-cover"
+          loading="lazy"
+        />
+        <div class="latest-text">
+          <h2 style="margin:0 0 8px;">آخر الفصول</h2>
+          <p class="muted" style="margin:0;">
+            آخر الفصول:&nbsp;
+            {
+              latest.slice(0, 4).map((it, i) => (
+                <>
+                  <a href={`/novels/${it.slug}/${it.chapter}`}>الفصل {it.chapter}</a>
+                  {i < Math.min(latest.length, 4) - 1 && "، "}
+                </>
+              ))
+            }
+            &nbsp;— <a href="/novels">عرض الكل</a>
+          </p>
+        </div>
+      </div>
+
+      <style>
+        .latest-wrap{
+          display:grid;
+          grid-template-columns: 140px 1fr;
+          gap:12px;
+          align-items:center;
+        }
+        @media (max-width: 560px){
+          .latest-wrap{ grid-template-columns: 1fr; }
+        }
+        .latest-cover{
+          width:100%; height:140px; object-fit:cover; border-radius:12px;
+          border:1px solid var(--stroke);
+        }
+        .latest-text a{ color: var(--ink); text-decoration: underline; }
+        .latest-text a:hover{ color: var(--accent); }
+      </style>
     </section>
   )}
+
 
   <!-- NOVELS GRID -->
   <section style="margin-top:18px">
