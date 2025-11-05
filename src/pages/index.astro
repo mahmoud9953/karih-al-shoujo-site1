@@ -47,49 +47,21 @@ const heroDesc  = hero?.description ?? "كل شيء ضبابي… حتى الح�
 ---
 
 <Base title="الرئيسية — موقع الروايات" description={novelTitle}>
-  <!-- HERO (compact) -->
-  <section
-    class="card"
-    style="
-      overflow:hidden;
-      padding:0;
-      margin-top:10px;
-    "
-  >
-    <div style="
-      height: min(34vw, 340px);
-      min-height: 220px;
-      position: relative;
-      background:
-        linear-gradient(180deg, rgba(8,10,16,.35), rgba(8,10,16,.55)),
-        url('{heroCover}') center 30% / cover no-repeat;
-    ">
-      <div style="
-        position:absolute; inset:0;
-        display:grid; place-items:center;
-        padding:18px;
-      ">
-        <div class="card" style="
-            max-width:680px; width:min(92vw,680px);
-            padding:16px 18px; text-align:center;
-            background: rgba(10,12,18,.55);
-          ">
-          <h1 style="margin:0 0 6px; font-size: clamp(20px, 3.6vw, 28px);">
-            مرحبًا بك في عالم الغموض
-          </h1>
-          <p class="muted" style="margin:0 0 12px;">
-            {heroDesc}
-          </p>
-          <div style="display:flex; gap:10px; justify-content:center;">
-            <a class="btn" href={`/novels/${novelSlug}`}>ابدأ القراءة</a>
-            <a class="btn btn-ghost" href="/novels">كل الروايات</a>
-          </div>
-        </div>
+
+  <!-- === Mystery Hero === -->
+  <section class="hero-mystery" dir="rtl">
+    <div class="veil"></div>
+    <div class="hero-content">
+      <h1>غموضٌ يبتلعُ اليقين</h1>
+      <p class="tagline">خطوةٌ واحدة… وتستيقظ في عالمٍ تتصارع فيه القوى والقدر.</p>
+      <div class="actions">
+        <a class="btn" href={`/novels/${novelSlug}`}>ابدأ القراءة</a>
+        <a class="btn btn-ghost" href="/novels">كل الروايات</a>
       </div>
     </div>
   </section>
 
-    <!-- LATEST (compact: cover + one sentence) -->
+  <!-- LATEST (compact: cover + one sentence) -->
   {latest.length > 0 && (
     <section class="card" style="margin-top:18px; padding:12px;">
       <div class="latest-wrap">
@@ -136,7 +108,6 @@ const heroDesc  = hero?.description ?? "كل شيء ضبابي… حتى الح�
     </section>
   )}
 
-
   <!-- NOVELS GRID -->
   <section style="margin-top:18px">
     <h2 style="margin:0 0 10px;">الروايات</h2>
@@ -154,6 +125,66 @@ const heroDesc  = hero?.description ?? "كل شيء ضبابي… حتى الح�
   </section>
 
   <style>
+    /* --- HERO STYLES --- */
+    .hero-mystery{
+      position: relative;
+      border-radius: 18px;
+      overflow: hidden;
+      min-height: clamp(220px, 38vh, 420px);
+      /* put your image at /public/img/mystery-hero.jpg (keeps working with gradient if missing) */
+      background:
+        radial-gradient(1200px 420px at 70% -10%, rgba(80,92,130,.25), transparent 60%),
+        url('/img/mystery-hero.jpg') center/cover no-repeat,
+        linear-gradient(180deg, #0b0f16, #0b0f16);
+      border: 1px solid var(--stroke, rgba(255,255,255,.08));
+      box-shadow: 0 10px 30px rgba(0,0,0,.35) inset;
+      margin-top: 10px;
+    }
+    .hero-mystery .veil{
+      position: absolute; inset: 0;
+      background:
+        linear-gradient(180deg, rgba(8,12,18,.60), rgba(8,12,18,.85)),
+        radial-gradient(900px 320px at 50% 0%, rgba(36,40,60,.35), transparent 60%);
+      backdrop-filter: blur(1px);
+    }
+    .hero-content{
+      position: relative; z-index: 1;
+      display: grid; place-items: center;
+      text-align: center;
+      padding: clamp(28px, 6vw, 56px) 16px;
+      gap: 12px;
+    }
+    .hero-content h1{
+      margin: 0;
+      font-weight: 900;
+      letter-spacing: .3px;
+      font-size: clamp(26px, 4.5vw, 46px);
+    }
+    .tagline{
+      margin: 4px 0 2px;
+      opacity: .9;
+      font-size: clamp(14px, 1.7vw, 18px);
+    }
+    .actions{
+      display: flex; gap: 10px; margin-top: 8px;
+    }
+    .btn{
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 10px 14px; border-radius: 12px;
+      background: var(--accent, #5b6cff);
+      color: #fff; text-decoration: none; font-weight: 700;
+      border: 1px solid rgba(255,255,255,.14);
+      transition: transform .15s ease, filter .15s ease, box-shadow .15s ease;
+    }
+    .btn:hover{ transform: translateY(-1px); filter: brightness(1.05); box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+    .btn-ghost{
+      background: transparent;
+      color: var(--ink, #e7e8ee);
+      border-color: rgba(255,255,255,.18);
+    }
+    .btn-ghost:hover{ background: rgba(255,255,255,.06); }
+
+    /* --- GRID --- */
     .grid{
       display:grid;
       grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));

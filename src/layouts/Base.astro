@@ -3,6 +3,15 @@ const { title = "موقع الروايات", description = "" } = Astro.props;
 ---
 <html lang="ar" dir="rtl">
   <head>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;900&family=Tajawal:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --font-head: 'Cairo', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    --font-body: 'Tajawal', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  }
+  html, body { font-family: var(--font-body); }
+  h1, h2, h3 { font-family: var(--font-head); }
+</style>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
@@ -68,6 +77,16 @@ const { title = "موقع الروايات", description = "" } = Astro.props;
       }
     </style>
   </head>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;900&family=Tajawal:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --font-head: 'Cairo', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    --font-body: 'Tajawal', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  }
+  html, body { font-family: var(--font-body); }
+  h1, h2, h3 { font-family: var(--font-head); }
+</style>
+
   <body>
     <header class="nav">
       <div class="container nav-inner">
