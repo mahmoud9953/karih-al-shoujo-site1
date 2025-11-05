@@ -1,46 +1,26 @@
 ---
 import Base from "@/layouts/Base.astro";
 
-// Build the list of *slugs* at build time
-export async function getStaticPaths() {
-  const all = import.meta.glob("/src/content/novels/**/*.md", { eager: true });
-  // collect unique slugs from frontmatter
-  const slugs = new Set<string>();
-  for (const mod of Object.values(all) as any[]) {
-    const fm = mod.frontmatter || {};
-    if (fm.slug) slugs.add(fm.slug);
-  }
-  return Array.from(slugs).map((slug) => ({ params: { slug } }));
-}
+export interface Props { params: { slug: string } }
+const { slug } = Astro.params as Props["params"];
 
-// Page data
-const { slug } = Astro.params;
+type FM = { novel?: string; slug?: string; chapter?: number; title?: string; summary?: string; cover?: string; };
+const files = import.meta.glob("/src/content/novels/**/*.md", { eager: true }) as Record<string, any>;
 
-// Load all chapters then filter to this slug
-const all = import.meta.glob("/src/content/novels/**/*.md", { eager: true });
-type FM = { title?: string; novel?: string; slug?: string; chapter?: number; summary?: string };
 const chapters: FM[] = [];
-
-for (const mod of Object.values(all) as any[]) {
-  const fm: FM = mod.frontmatter || {};
+for (const mod of Object.values(files)) {
+  const fm: FM = mod.frontmatter ?? {};
   if (fm.slug === slug) chapters.push(fm);
 }
+chapters.sort((a,b)=>(a.chapter??0)-(b.chapter??0));
 
-chapters.sort((a, b) => (a.chapter ?? 0) - (b.chapter ?? 0));
-const title = chapters[0]?.novel || slug;
+const metaTitle = chapters[0]?.novel ?? slug;
+const cover = chapters[0]?.cover ?? "/cover3.png";
 ---
 
-<Base title={`${title} — فهرس الفصول`} description={`فهرس فصول ${title}`}>
-  <h1>{title}</h1>
-  <p class="muted">فهرس الفصول</p>
-
-  <div class="card" style="margin-top:1rem;">
-    <ol class="toc" id="toc">
-  {chapters.map((c) => (
-    <li>
-      <a href={`/novels/${slug}/${c.chapter}`}>{c.title}</a>
-    </li>
-  ))}
-</ol>
-  </div>
-</Base>
+<Base title={`${metaTitle} — الفصول`}>
+  <section class="container" dir="rtl" style="padding:26px 0;">
+    <div class="novel-head glass">
+      <img src={cover} alt={metaTitle} />
+      <div class="meta">
+        <h1 style="margin:0

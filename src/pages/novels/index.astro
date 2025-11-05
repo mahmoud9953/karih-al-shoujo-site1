@@ -1,0 +1,67 @@
+---
+import Base from "@/layouts/Base.astro";
+
+// read all chapters and group by novel slug
+const files = import.meta.glob("/src/content/novels/**/*.md", { eager: true }) as Record<string, any>;
+
+type FM = { novel?: string; slug?: string; chapter?: number; cover?: string; summary?: string; };
+
+const bySlug = new Map<string, { title: string; slug: string; cover: string; count: number; latest: number }>();
+
+for (const mod of Object.values(files)) {
+  const fm: FM = mod.frontmatter ?? {};
+  if (!fm.slug) continue;
+  const entry = bySlug.get(fm.slug) ?? {
+    title: fm.novel ?? fm.slug,
+    slug: fm.slug,
+    cover: fm.cover ?? "/cover3.png",
+    count: 0,
+    latest: 0,
+  };
+  entry.count += 1;
+  entry.latest = Math.max(entry.latest, Number(fm.chapter ?? 0));
+  if (!bySlug.has(fm.slug)) bySlug.set(fm.slug, entry);
+}
+
+const novels = Array.from(bySlug.values()).sort((a,b)=> a.slug.localeCompare(b.slug));
+---
+
+<Base title="كل الروايات">
+  <section class="container" dir="rtl" style="padding:28px 0;">
+    <h1 style="margin:0 0 12px;">كل الروايات</h1>
+    <p class="muted" style="margin:0 0 18px;">اختر رواية للبدء بالقراءة.</p>
+
+    <div class="grid">
+      {novels.map(n => (
+        <a class="card" href={`/novels/${n.slug}`}>
+          <img src={n.cover} alt={n.title} loading="lazy" />
+          <div class="info">
+            <strong>{n.title}</strong>
+            <span class="muted">عدد الفصول: {n.count} — آخر فصل: {n.latest}</span>
+          </div>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <style>
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+    }
+    .card{
+      display:block;
+      text-decoration:none;
+      color:inherit;
+      background: var(--glass);
+      border:1px solid var(--stroke);
+      border-radius: 14px;
+      overflow:hidden;
+      transition: transform .15s ease, border-color .15s ease;
+    }
+    .card:hover{ transform: translateY(-3px); border-color: rgba(255,255,255,.14); }
+    .card img{ width:100%; aspect-ratio: 4/3; object-fit: cover; }
+    .info{ padding:10px 12px; display:flex; flex-direction:column; gap:6px; }
+  </style>
+</Base>

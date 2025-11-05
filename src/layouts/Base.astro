@@ -17,6 +17,56 @@ const { title = "موقع الروايات", description = "" } = Astro.props;
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 
   <body>
+  <header class="topbar" dir="rtl">
+  <div class="topbar__inner container">
+    <a class="brand" href="/">موقع الروايات</a>
+
+    <nav class="nav">
+      <a href="/" class="nav__link">الرئيسية</a>
+      <a href="/novels" class="nav__link">كل الروايات</a>
+      <a id="accountLink" href="/login" class="nav__link">تسجيل الدخول</a>
+    </nav>
+  </div>
+
+  <style is:global>
+    .topbar{
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(10,14,22,.7);
+      backdrop-filter: blur(6px);
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .topbar__inner{ display:flex; align-items:center; justify-content:space-between; padding:10px 0; }
+    .brand{ color:#e9eef5; text-decoration:none; font-weight:700; }
+    .nav{ display:flex; gap:14px; }
+    .nav__link{ color:#cfd6dd; text-decoration:none; padding:6px 10px; border-radius:10px; }
+    .nav__link:hover{ background: rgba(255,255,255,.06); color:#fff; }
+  </style>
+
+  <!-- update the Account button text based on auth -->
+  <script type="module">
+    import { auth } from "@/lib/firebase.js";
+    import { onAuthStateChanged, signOut } from "firebase/auth";
+
+    const link = document.getElementById("accountLink");
+    onAuthStateChanged(auth, (user) => {
+      if (!link) return;
+      if (user) {
+        link.textContent = "حسابي / تسجيل الخروج";
+        link.href = "#";
+        link.onclick = async (e) => {
+          e.preventDefault();
+          await signOut(auth);
+          window.location.href = "/"; // back home after logout
+        };
+      } else {
+        link.textContent = "تسجيل الدخول";
+        link.href = "/login";
+        link.onclick = null;
+      }
+    });
+  </script>
+</header>
+
   <div class="site-bg">
     <slot />
   </div>
