@@ -1,112 +1,76 @@
 ---
-import Base from '../layouts/Base.astro';
-
-// Grab the PUBLIC_* vars on the server (they ARE available here)
-const cfg = {
-  apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
-  authDomain: import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.PUBLIC_FIREBASE_STORAGE_BUCKET,
-  appId: import.meta.env.PUBLIC_FIREBASE_APP_ID,
-};
+import Base from "../layouts/Base.astro";
+const pageTitle = "تسجيل الدخول";
 ---
 
-<Base title="تسجيل الدخول">
-  <h1 style="text-align:center;margin:1rem 0;">تسجيل الدخول</h1>
+<Base title={pageTitle}>
+  <section dir="rtl" style="
+    min-height:calc(100vh - 120px);
+    display:grid; place-items:center;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(139,92,246,.15), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(6,182,212,.12), transparent 60%);
+  ">
+    <div class="glass" style="width:min(92vw,560px); padding:28px 26px 24px;">
+      <header style="display:grid; gap:8px; justify-items:center; margin-bottom:18px;">
+        <svg viewBox="0 0 48 48" width="52" height="52" aria-hidden="true">
+          <circle cx="24" cy="24" r="22" fill="none" stroke="#8b5cf6" stroke-width="2"/>
+          <path d="M24 10v28M14 18h20M14 30h20" stroke="#06b6d4" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <h1 style="margin:6px 0 0; font-size:28px;">تسجيل الدخول</h1>
+        <p class="muted">ادخل عالم «كارِه الشوجو» وتابع فصولك المفضلة.</p>
+      </header>
 
-  <p id="msg" style="text-align:center;min-height:1.2rem;"></p>
+      <!-- Signed-out -->
+      <div id="signedOut">
+        <button id="googleBtn" class="btn btn-google" style="width:100%;">
+          <img src="/google.svg" alt="" width="18" height="18" />
+          المتابعة مع Google
+        </button>
 
-  <div style="display:flex;flex-direction:column;align-items:center;gap:.75rem">
-    <button id="googleBtn" class="btn">المتابعة مع Google</button>
+        <div style="display:flex; align-items:center; gap:10px; margin:12px 0;">
+          <div style="height:1px; flex:1; background:#263043;"></div>
+          <span class="muted">أو</span>
+          <div style="height:1px; flex:1; background:#263043;"></div>
+        </div>
 
-    <input id="email" type="email" placeholder="البريد الإلكتروني"
-           style="padding:.6rem .8rem;border-radius:.5rem;width:260px;">
-    <input id="password" type="password" placeholder="كلمة المرور"
-           style="padding:.6rem .8rem;border-radius:.5rem;width:260px;">
+        <label class="field">
+          <span>البريد الإلكتروني</span>
+          <input id="email" type="email" placeholder="name@email.com" />
+        </label>
+        <label class="field">
+          <span>كلمة المرور</span>
+          <input id="password" type="password" placeholder="••••••••" />
+        </label>
 
-    <div style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center">
-      <button id="emailLogin" class="btn">تسجيل الدخول</button>
-      <button id="emailRegister" class="btn">إنشاء حساب</button>
-      <button id="logoutBtn" class="btn">تسجيل الخروج</button>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button id="emailLogin" class="btn" style="flex:1;">تسجيل الدخول</button>
+          <button id="emailRegister" class="btn btn-ghost" style="flex:1;">إنشاء حساب</button>
+        </div>
+
+        <p id="msg" class="muted" style="min-height:22px; margin-top:6px;"></p>
+      </div>
+
+      <!-- Signed-in -->
+      <div id="signedIn" style="display:none;">
+        <div style="display:flex; gap:12px; align-items:center; margin:6px 0 16px;">
+          <img id="avatar" src="/avatar-fallback.png" width="44" height="44" style="border-radius:50%; border:1px solid #2b364b;" alt="avatar" />
+          <div>
+            <div id="displayName" style="font-weight:700;">مستخدم</div>
+            <div id="emailOut" class="muted small"></div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-bottom:14px;">
+          <a href="/novels/karih-al-shoujo" class="btn">اذهب إلى الرواية</a>
+          <a href="/novels" class="btn btn-ghost">كل الروايات</a>
+        </div>
+
+        <button id="logoutBtn" class="btn btn-danger" style="width:100%;">تسجيل الخروج</button>
+      </div>
     </div>
-  </div>
+  </section>
 
-  <style>
-    .btn{ padding:.6rem 1rem;border-radius:.5rem;cursor:pointer;border:1px solid #444;background:#222;color:#eee;
-      transition: transform 120ms ease, filter 120ms ease; }
-    .btn:active{ transform: scale(.98); filter: brightness(.95); }
-    .btn:focus-visible{ outline:2px solid #8ab4f8; outline-offset:2px; }
-  </style>
-
-  <!-- Inject `cfg` into this script with define:vars so we don't use import.meta.env in the browser -->
-  <script type="module" define:vars={{ cfg }}>
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
-    import {
-      getAuth,
-      GoogleAuthProvider,
-      signInWithPopup,
-      signInWithEmailAndPassword,
-      createUserWithEmailAndPassword,
-      signOut,
-      onAuthStateChanged
-    } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
-
-    // `cfg` is injected by Astro (from the server) — safe & already filled
-    const app = initializeApp(cfg);
-    const auth = getAuth(app);
-    const provider = new GoogleAuthProvider();
-
-    const $ = (s) => document.querySelector(s);
-    const googleBtn     = $('#googleBtn');
-    const emailLogin    = $('#emailLogin');
-    const emailRegister = $('#emailRegister');
-    const logoutBtn     = $('#logoutBtn');
-    const email         = $('#email');
-    const password      = $('#password');
-    const msg           = $('#msg');
-    const show = (t='') => { if (msg) msg.textContent = t; };
-
-    googleBtn?.addEventListener('click', async () => {
-      show('جاري تسجيل الدخول…');
-      try {
-        await signInWithPopup(auth, provider);
-        show('تم تسجيل الدخول بنجاح ✅');
-      } catch (e) {
-        show('خطأ: ' + (e?.message || e?.code || ''));
-        console.error(e);
-      }
-    });
-
-    emailLogin?.addEventListener('click', async () => {
-      show('…');
-      try {
-        await signInWithEmailAndPassword(auth, email.value.trim(), password.value);
-        show('تم تسجيل الدخول ✅');
-      } catch (e) {
-        show('خطأ: ' + (e?.message || e?.code || ''));
-        console.error(e);
-      }
-    });
-
-    emailRegister?.addEventListener('click', async () => {
-      show('…');
-      try {
-        await createUserWithEmailAndPassword(auth, email.value.trim(), password.value);
-        show('تم إنشاء الحساب وتسجيل الدخول ✅');
-      } catch (e) {
-        show('خطأ: ' + (e?.message || e?.code || ''));
-        console.error(e);
-      }
-    });
-
-    logoutBtn?.addEventListener('click', async () => {
-      await signOut(auth);
-      show('تم تسجيل الخروج.');
-    });
-
-    onAuthStateChanged(auth, (user) => {
-      if (user) show('مسجّل دخول: ' + (user.email || user.displayName || 'مستخدم'));
-      else show('');
-    });
-  </script>
+  <!-- IMPORTANT: keep using the working file you already had -->
+  <script type="module" src="/login.js"></script>
 </Base>
