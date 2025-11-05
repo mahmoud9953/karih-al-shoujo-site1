@@ -1,90 +1,143 @@
 ---
-import Base from "../layouts/Base.astro"; // use relative path; alias "@" may not be configured
+import Base from "@/layouts/Base.astro";
 
-// Load chapters for "karih-al-shoujo"
-const all = import.meta.glob("/src/content/novels/**/*.md", { eager: true });
+// Load chapters & group by novel
+const files = import.meta.glob("/src/content/novels/**/*.md", { eager: true }) as Record<string, any>;
 
-type FM = {
-  title?: string;
-  novel?: string;
-  slug?: string;
-  chapter?: number;
-  summary?: string;
-};
+type FM = { novel?: string; slug?: string; chapter?: number; cover?: string; summary?: string; description?: string; };
 
-const chapters: FM[] = [];
-for (const mod of Object.values(all) as any[]) {
-  const fm: FM = (mod as any).frontmatter ?? {};
-  if (fm.slug === "karih-al-shoujo") chapters.push(fm);
+const bySlug = new Map<string, {
+  title: string; slug: string; cover: string; count: number; latest: number; description: string;
+}>();
+
+const allChapters: Array<{slug:string; chapter:number; title:string}> = [];
+
+for (const mod of Object.values(files)) {
+  const fm: FM = mod.frontmatter ?? {};
+  if (!fm.slug) continue;
+
+  const entry = bySlug.get(fm.slug) ?? {
+    title: fm.novel ?? fm.slug,
+    slug: fm.slug,
+    cover: fm.cover ?? "/cover3.png",
+    count: 0,
+    latest: 0,
+    description: fm.description ?? "",
+  };
+  entry.count += 1;
+  entry.latest = Math.max(entry.latest, Number(fm.chapter ?? 0));
+  bySlug.set(fm.slug, entry);
+
+  // list for "latest"
+  const t = fm.title ?? `الفصل ${fm.chapter ?? ""}`;
+  const cnum = Number(fm.chapter ?? 0);
+  if (Number.isFinite(cnum)) allChapters.push({ slug: fm.slug, chapter: cnum, title: t });
 }
-chapters.sort((a, b) => (a.chapter ?? 0) - (b.chapter ?? 0));
 
-const novelTitle = chapters[0]?.novel ?? "كاره الشوجو";
+const novels = Array.from(bySlug.values()).sort((a,b)=> a.slug.localeCompare(b.slug));
+allChapters.sort((a,b)=> b.chapter - a.chapter);
+const latest = allChapters.slice(0, 6);
+
+// For hero: use first novel (if exists)
+const hero = novels[0];
+const novelTitle = hero?.title ?? "كاره الشوجو";
+const novelSlug = hero?.slug ?? "karih-al-shoujo";
+const heroCover = hero?.cover ?? "/cover3.png";
+const heroDesc  = hero?.description ?? "كل شيء ضبابي… حتى الحقيقة. ادخل عالم «كاره الشوجو»، حيث تتقاطع القوى والقدر.";
 ---
 
-<Base title="الرئيسية — موقع الروايات" description={`اقرأ ${novelTitle} فصلًا فصلًا بسرعة CDN`}>
-  <!-- Hero -->
-  <section class="hero hero--karih" dir="rtl">
-  <div class="hero__content container glass">
-    <h1>مرحبًا بك في عالم الغموض</h1>
-    <p class="muted">
-      كل شيء ضبابي… حتى الحقيقة. ادخل عالم «كارِه الشوجو» حيث تتقاطع القوى والقدر.
-    </p>
-    <div class="btn-row">
-      <a class="btn" href="/novels/karih-al-shoujo">ابدأ القراءة</a>
-      <a class="btn btn-ghost" href="/novels">كل الروايات</a>
+<Base title="الرئيسية — موقع الروايات" description={novelTitle}>
+  <!-- HERO (compact) -->
+  <section
+    class="card"
+    style="
+      overflow:hidden;
+      padding:0;
+      margin-top:10px;
+    "
+  >
+    <div style="
+      height: min(34vw, 340px);
+      min-height: 220px;
+      position: relative;
+      background:
+        linear-gradient(180deg, rgba(8,10,16,.35), rgba(8,10,16,.55)),
+        url('{heroCover}') center 30% / cover no-repeat;
+    ">
+      <div style="
+        position:absolute; inset:0;
+        display:grid; place-items:center;
+        padding:18px;
+      ">
+        <div class="card" style="
+            max-width:680px; width:min(92vw,680px);
+            padding:16px 18px; text-align:center;
+            background: rgba(10,12,18,.55);
+          ">
+          <h1 style="margin:0 0 6px; font-size: clamp(20px, 3.6vw, 28px);">
+            مرحبًا بك في عالم الغموض
+          </h1>
+          <p class="muted" style="margin:0 0 12px;">
+            {heroDesc}
+          </p>
+          <div style="display:flex; gap:10px; justify-content:center;">
+            <a class="btn" href={`/novels/${novelSlug}`}>ابدأ القراءة</a>
+            <a class="btn btn-ghost" href="/novels">كل الروايات</a>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
+  </section>
+
+  <!-- LATEST CHAPTERS -->
+  {latest.length > 0 && (
+    <section style="margin-top:18px">
+      <h2 style="margin:0 0 10px;">آخر الفصول</h2>
+      <ul class="card" style="list-style:none; padding:12px 14px; margin:0;">
+        {latest.map(item => (
+          <li style="padding:8px 4px; border-bottom:1px solid var(--stroke); display:flex; justify-content:space-between; align-items:center;">
+            <a href={`/novels/${item.slug}/${item.chapter}`}>
+              {item.title}
+            </a>
+            <span class="muted" style="font-size:.92rem;">{item.slug} • الفصل {item.chapter}</span>
+          </li>
+        ))}
+        <li style="padding:8px 4px; text-align:center;">
+          <a class="btn btn-ghost" href="/novels">عرض كل الروايات</a>
+        </li>
+      </ul>
+    </section>
+  )}
+
+  <!-- NOVELS GRID -->
+  <section style="margin-top:18px">
+    <h2 style="margin:0 0 10px;">الروايات</h2>
+    <div class="grid">
+      {novels.map(n => (
+        <a class="novel" href={`/novels/${n.slug}`}>
+          <img src={n.cover} alt={n.title} loading="lazy" />
+          <div class="meta">
+            <strong>{n.title}</strong>
+            <span class="muted">عدد الفصول: {n.count} — آخر فصل: {n.latest}</span>
+          </div>
+        </a>
+      ))}
+    </div>
+  </section>
 
   <style>
-    /* hero sizing + background */
-    .hero{
-      position:relative;
-      padding:48px 0;
-      min-height: 240px; /* compact on phones */
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 14px;
     }
-    .hero--karih{
-      /* dim the image with a gradient overlay */
-      background:
-        linear-gradient(to bottom, rgba(10,14,22,.65), rgba(10,14,22,.35)),
-        url("/cover3.png") center right / cover no-repeat;
-      border-radius: 0 0 22px 22px;
-      overflow: hidden;
+    .novel{
+      display:block; text-decoration:none; color:inherit;
+      background:var(--glass); border:1px solid var(--stroke); border-radius:14px;
+      overflow:hidden; transition: transform .15s ease, border-color .15s ease;
     }
-    .hero__content{
-      padding:20px 22px;
-      max-width: 760px;
-    }
-    .hero__content h1{
-      margin: 0 0 .35rem;
-      font-size: clamp(1.35rem, 2.5vw + .7rem, 2rem);
-      line-height: 1.2;
-    }
-    .btn-row{ display:flex; gap:.6rem; margin-top:.75rem; flex-wrap:wrap; }
-
-    /* desktop: a bit taller but still sane */
-    @media (min-width: 900px){
-      .hero{ padding:64px 0; min-height: 320px; }
-      .hero__content{ padding:26px; }
-    }
+    .novel:hover{ transform: translateY(-3px); border-color: rgba(255,255,255,.14); }
+    .novel img{ width:100%; aspect-ratio: 16/10; object-fit: cover; }
+    .meta{ padding:10px 12px; display:flex; flex-direction:column; gap:6px; }
   </style>
-</section>
-
-
-  <!-- TOC -->
-  <div class="card" style="margin-top:1rem; text-align:center;">
-    <img src="/cover3.png" alt="غلاف رواية كاره الشوجو" style="width:100%;border-radius:16px;margin-bottom:1rem;"/>
-    <strong style="display:block; font-size:1.2rem; margin-bottom:.4rem;">رواية كاره الشوجو</strong>
-
-    <ol class="toc" id="toc" style="text-align:right; margin:0 auto; max-width:64ch;">
-      {chapters.map((c) => (
-        <li style="margin:.5rem 0;">
-          <a href={`/novels/${c.slug}/${c.chapter}`}>
-            الفصل {c.chapter}: {c.title ?? `الفصل ${c.chapter}`}
-          </a>
-          {c.summary && <span class="muted"> — {c.summary}</span>}
-        </li>
-      ))}
-    </ol>
-  </div>
 </Base>
