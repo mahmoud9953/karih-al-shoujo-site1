@@ -1,19 +1,26 @@
 ---
 import Base from "@/layouts/Base.astro";
 
-/** Load all chapter files eagerly */
-const mods = import.meta.glob("/src/content/novels/*/*.md", { eager: true });
+/** REQUIRED for static build of dynamic [slug] route */
+export function getStaticPaths() {
+  // 1) Load all chapters (eager = at build time)
+  const mods = import.meta.glob("/src/content/novels/*/*.md", { eager: true });
 
-/** Build a registry of novels -> chapters */
-function buildRegistry() {
-  const reg = new Map<string, any[]>();
+  // 2) Build a registry per novel slug
+  const reg = new Map(); // Map<string, any[]>
   for (const [path, mod] of Object.entries(mods)) {
-    const slug = path.match(/\/src\/content\/novels\/([^/]+)\//)?.[1] ?? "unknown";
     const fm = (mod as any).frontmatter || {};
 
-    const fileChap = path.match(/\/([^/]+)\.md$/)?.[1] ?? "";
-    const chNum = Number(fileChap.replace(/[^0-9.]/g, ""));
-    const chapter = Number.isFinite(fm.chapter) ? fm.chapter : (Number.isFinite(chNum) ? chNum : 0);
+    // derive slug from folder name
+    const slugMatch = path.match(/\/src\/content\/novels\/([^/]+)\//);
+    const slug = slugMatch ? slugMatch[1] : "unknown";
+
+    // derive chapter number if not in frontmatter
+    const fileName = path.match(/\/([^/]+)\.md$/)?.[1] ?? "";
+    const parsedNum = Number(fileName.replace(/[^0-9.]/g, ""));
+    const chapter =
+      Number.isFinite(fm.chapter) ? fm.chapter :
+      (Number.isFinite(parsedNum) ? parsedNum : 0);
 
     const item = {
       ...fm,
@@ -28,20 +35,12 @@ function buildRegistry() {
     reg.set(slug, arr);
   }
 
-  // Sort chapters in each novel
-  for (const [k, v] of reg) {
-    v.sort((a: any, b: any) => (a.chapter ?? 0) - (b.chapter ?? 0));
-    reg.set(k, v);
-  }
-  return reg;
-}
-
-/** REQUIRED for static build of dynamic route */
-export function getStaticPaths() {
-  const REG = buildRegistry();                   // ⟵ compute inside the function
-  return Array.from(REG.entries()).map(([slug, chapters]) => {
+  // 3) Sort and return static paths
+  const paths = [];
+  for (const [slug, chapters] of reg.entries()) {
+    chapters.sort((a, b) => (a.chapter ?? 0) - (b.chapter ?? 0));
     const meta = chapters[0] ?? {};
-    return {
+    paths.push({
       params: { slug },
       props: {
         slug,
@@ -50,11 +49,19 @@ export function getStaticPaths() {
         cover: meta.cover ?? "/cover3.png",
         description: meta.description ?? "",
       },
-    };
-  });
+    });
+  }
+  return paths;
 }
 
-const { slug, chapters = [], title = "رواية", cover = "/cover3.png", description = "" } = Astro.props;
+// Props from getStaticPaths
+const {
+  slug,
+  chapters = [],
+  title = "رواية",
+  cover = "/cover3.png",
+  description = "",
+} = Astro.props;
 ---
 
 <Base title={`${title} — الفصول`} description={description}>
