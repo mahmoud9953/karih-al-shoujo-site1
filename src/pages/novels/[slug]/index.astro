@@ -1,19 +1,16 @@
 ---
 import Base from "@/layouts/Base.astro";
 
-/** Build a registry of novels from markdown files */
+/** Load all chapter files eagerly */
 const mods = import.meta.glob("/src/content/novels/*/*.md", { eager: true });
 
+/** Build a registry of novels -> chapters */
 function buildRegistry() {
-  /** registry: { [slug: string]: Array<FM> } */
-  const reg = new Map();
+  const reg = new Map<string, any[]>();
   for (const [path, mod] of Object.entries(mods)) {
-    // slug is the folder name after /novels/
-    const m = path.match(/\/src\/content\/novels\/([^/]+)\//);
-    const slug = m?.[1] ?? "unknown";
-
+    const slug = path.match(/\/src\/content\/novels\/([^/]+)\//)?.[1] ?? "unknown";
     const fm = (mod as any).frontmatter || {};
-    // derive chapter number from filename if not provided
+
     const fileChap = path.match(/\/([^/]+)\.md$/)?.[1] ?? "";
     const chNum = Number(fileChap.replace(/[^0-9.]/g, ""));
     const chapter = Number.isFinite(fm.chapter) ? fm.chapter : (Number.isFinite(chNum) ? chNum : 0);
@@ -22,9 +19,8 @@ function buildRegistry() {
       ...fm,
       slug,
       chapter,
-      // sensible fallbacks
       novel: fm.novel ?? slug,
-      title: fm.title ?? `الفصل ${chapter}`
+      title: fm.title ?? `الفصل ${chapter}`,
     };
 
     const arr = reg.get(slug) ?? [];
@@ -32,7 +28,7 @@ function buildRegistry() {
     reg.set(slug, arr);
   }
 
-  // sort chapters inside each novel
+  // Sort chapters in each novel
   for (const [k, v] of reg) {
     v.sort((a: any, b: any) => (a.chapter ?? 0) - (b.chapter ?? 0));
     reg.set(k, v);
@@ -40,12 +36,10 @@ function buildRegistry() {
   return reg;
 }
 
-const REGISTRY = buildRegistry();
-
 /** REQUIRED for static build of dynamic route */
 export function getStaticPaths() {
-  return Array.from(REGISTRY.keys()).map((slug) => {
-    const chapters = REGISTRY.get(slug) ?? [];
+  const REG = buildRegistry();                   // ⟵ compute inside the function
+  return Array.from(REG.entries()).map(([slug, chapters]) => {
     const meta = chapters[0] ?? {};
     return {
       params: { slug },
@@ -54,8 +48,8 @@ export function getStaticPaths() {
         chapters,
         title: meta.novel ?? slug,
         cover: meta.cover ?? "/cover3.png",
-        description: meta.description ?? ""
-      }
+        description: meta.description ?? "",
+      },
     };
   });
 }
