@@ -12,10 +12,12 @@
     "@astrojs/prefetch": "^0.4.0",
     "astro": "^4.16.19",
     "fast-glob": "^3.3.2",
-    "firebase": "^12.5.0",
     "reading-time": "^1.5.0"
   },
   "devDependencies": {
     "@astrojs/vercel": "7.7.1"
+  },
+  "engines": {
+    "node": "20.x"
   }
 }
