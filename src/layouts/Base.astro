@@ -142,6 +142,7 @@ const { title = "موقع الروايات", description = "" } = Astro.props;
     </footer>
 
     <!-- Small client script that turns the "تسجيل الدخول" into username + avatar and handles logout & redirect -->
-    <script type="module" src="/src/lib/auth-ui.js"></script>
+    <script type="module" src={Astro.resolve("../lib/auth-ui.js")}></script>
+
   </body>
 </html>

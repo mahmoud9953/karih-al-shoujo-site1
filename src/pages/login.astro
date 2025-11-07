@@ -33,6 +33,6 @@ import Base from "@/layouts/Base.astro";
     </div>
   </section>
 
-  <!-- bundle-aware client script (Vite will handle "firebase/auth") -->
-  <script type="module" src="/src/pages/login.client.js"></script>
+  <!-- IMPORTANT: use Astro.resolve so this works on Vercel -->
+  <script type="module" src={Astro.resolve("./login.client.js")}></script>
 </Base>
