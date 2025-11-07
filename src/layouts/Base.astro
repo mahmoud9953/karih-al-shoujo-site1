@@ -22,23 +22,68 @@ const FB = {
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;900&family=Tajawal:wght@400;500&display=swap" rel="stylesheet" />
 
     <style>
-      :root{ --ink:#e7e9ee; --muted:#b3b9c7; --stroke:rgba(255,255,255,.08); --glass:rgba(255,255,255,.04); --bg:#0b0f14; }
+      :root{
+        --ink:#e7e9ee; --muted:#b3b9c7; --stroke:rgba(255,255,255,.08);
+        --glass:rgba(255,255,255,.04); --bg:#0b0f14;
+      }
       html,body{height:100%}
-      body{margin:0;color:var(--ink);background:
-        radial-gradient(1200px 600px at 75% -10%, rgba(110,168,255,.07), transparent 60%),
-        radial-gradient(1000px 500px at 10% 110%, rgba(190,120,255,.06), transparent 55%),
-        var(--bg);}
-      .container{ width:min(1100px,92vw); margin-inline:auto }
-      header.nav{position:sticky; top:0; z-index:50; backdrop-filter:blur(10px); background:rgba(5,7,10,.55); border-bottom:1px solid var(--stroke)}
-      .nav-inner{display:flex; align-items:center; justify-content:space-between; height:56px}
-      .links{display:flex; gap:14px; align-items:center}
-      .card{ background:var(--glass); border:1px solid var(--stroke); border-radius:16px }
+      body{
+        margin:0;color:var(--ink);
+        font-family:'Tajawal',system-ui,sans-serif;
+        line-height:1.65;
+        background:
+          radial-gradient(1200px 600px at 75% -10%, rgba(110,168,255,.07), transparent 60%),
+          radial-gradient(1000px 500px at 10% 110%, rgba(190,120,255,.06), transparent 55%),
+          var(--bg);
+      }
+
+      .container{ width:min(1100px,92vw); margin-inline:auto; padding:0 1rem; }
+
+      header.nav{
+        position:sticky; top:0; z-index:50;
+        backdrop-filter:blur(10px);
+        background:rgba(5,7,10,.55);
+        border-bottom:1px solid var(--stroke);
+      }
+      .nav-inner{
+        display:flex; align-items:center; justify-content:space-between;
+        height:56px; gap:12px; flex-wrap:wrap;
+      }
+      .links{ display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+      .links a{ color:var(--ink); text-decoration:none; font-weight:600; }
+
+      .card{ background:var(--glass); border:1px solid var(--stroke); border-radius:16px; }
       .muted{ color:var(--muted) }
-      #authArea{ display:flex; align-items:center; gap:10px }
-      #authAvatar{ display:none; width:28px; height:28px; border-radius:50%; border:1px solid var(--stroke); object-fit:cover }
+
+      #authArea{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+      #authAvatar{
+        display:none; width:28px; height:28px; border-radius:50%;
+        border:1px solid var(--stroke); object-fit:cover;
+      }
       #authMenu{ position:relative; display:none }
-      #authMenuList{ position:absolute; right:0; top:34px; min-width:160px; background:var(--glass); border:1px solid var(--stroke); border-radius:10px; padding:6px; display:none; z-index:20 }
-      .btn{ padding:10px 14px; border-radius:12px; border:1px solid var(--stroke); background:transparent; color:var(--ink); cursor:pointer }
+      #authMenuList{
+        position:absolute; right:0; top:34px; min-width:160px;
+        background:var(--glass); border:1px solid var(--stroke);
+        border-radius:10px; padding:6px; display:none; z-index:20;
+      }
+
+      .btn{
+        padding:10px 14px; border-radius:12px; border:1px solid var(--stroke);
+        background:transparent; color:var(--ink); cursor:pointer; font-size:.95rem;
+      }
+
+      /* ---------- 📱 Mobile tweaks (<=600px) ---------- */
+      @media (max-width: 600px) {
+        .container{ width:94%; padding:0 .75rem; }
+        .nav-inner{ flex-direction:column; align-items:flex-start; height:auto; padding:8px 0; }
+        .links{ flex-direction:column; align-items:flex-start; gap:8px; }
+        #authArea{ width:100%; justify-content:space-between; }
+        #authLink, #authMenuBtn{ padding:8px 12px; font-size:.95rem; }
+        main.container{ padding-top:10px; }
+        .card{ padding:1rem; }
+        input, button{ font-size:1rem !important; }
+        h1{ font-size:1.35rem; }
+      }
     </style>
   </head>
 
@@ -69,7 +114,7 @@ const FB = {
       <slot />
     </main>
 
-    <!-- Firebase via CDN; env passed with define:vars so no ${} in script -->
+    <!-- Firebase via CDN; env passed with define:vars -->
     <script type="module" define:vars={{ FB }}>
       import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
       import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
@@ -103,7 +148,8 @@ const FB = {
           authLink.style.display = "inline-flex";
         }
         if (authAvatar) {
-          authAvatar.src = user.photoURL || "https://ui-avatars.com/api/?name=" + encodeURIComponent(user.displayName || "User");
+          authAvatar.src =
+            user.photoURL || "https://ui-avatars.com/api/?name=" + encodeURIComponent(user.displayName || "User");
           authAvatar.alt = "avatar";
           authAvatar.style.display = "inline-block";
         }
