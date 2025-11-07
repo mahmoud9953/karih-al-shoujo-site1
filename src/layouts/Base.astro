@@ -57,6 +57,77 @@ import authUiUrl from "../lib/auth-ui.js?url"; // bundled URL
     </main>
 
     <!-- one external module; NO inline imports -->
-    <script type="module" src={authUiUrl}></script>
+    ---
+const e = import.meta.env;
+---
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey:        ${JSON.stringify(e.PUBLIC_FIREBASE_API_KEY)},
+    authDomain:    ${JSON.stringify(e.PUBLIC_FIREBASE_AUTH_DOMAIN)},
+    projectId:     ${JSON.stringify(e.PUBLIC_FIREBASE_PROJECT_ID)},
+    storageBucket: ${JSON.stringify(e.PUBLIC_FIREBASE_STORAGE_BUCKET)},
+    appId:         ${JSON.stringify(e.PUBLIC_FIREBASE_APP_ID)},
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  const authLink = document.getElementById("authLink");
+  const authAvatar = document.getElementById("authAvatar");
+  const authMenu = document.getElementById("authMenu");
+  const authMenuBtn = document.getElementById("authMenuBtn");
+  const authMenuList = document.getElementById("authMenuList");
+  const signOutBtn = document.getElementById("signOutBtn");
+
+  function setSignedOut() {
+    if (authAvatar) authAvatar.style.display = "none";
+    if (authMenu) authMenu.style.display = "none";
+    if (authLink) {
+      authLink.href = "/login";
+      authLink.className = "btn";
+      authLink.textContent = "تسجيل الدخول";
+      authLink.style.display = "inline-flex";
+    }
+  }
+
+  function setSignedIn(user) {
+    if (authLink) {
+      authLink.textContent = user.displayName || user.email || "حسابي";
+      authLink.href = "/";
+      authLink.className = "btn";
+      authLink.style.display = "inline-flex";
+    }
+    if (authAvatar) {
+      authAvatar.src =
+        user.photoURL || "https://ui-avatars.com/api/?name=" + encodeURIComponent(user.displayName || "User");
+      authAvatar.alt = "avatar";
+      authAvatar.style.display = "inline-block";
+    }
+    if (authMenu) authMenu.style.display = "inline-block";
+  }
+
+  onAuthStateChanged(auth, (user) => { user ? setSignedIn(user) : setSignedOut(); });
+
+  authMenuBtn?.addEventListener("click", () => {
+    if (!authMenuList) return;
+    const vis = authMenuList.style.display === "block";
+    authMenuList.style.display = vis ? "none" : "block";
+  });
+
+  signOutBtn?.addEventListener("click", async () => {
+    await signOut(auth);
+    setSignedOut();
+    window.location.href = "/";
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!authMenu || !authMenuList) return;
+    if (!authMenu.contains(e.target)) authMenuList.style.display = "none";
+  });
+</script>
+
   </body>
 </html>
