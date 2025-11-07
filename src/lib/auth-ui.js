@@ -1,74 +1,68 @@
 // src/lib/auth-ui.js
-import { auth } from './firebase.js';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { auth } from "/src/lib/firebase.js";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 
-const $ = (s) => document.querySelector(s);
-const authLink   = $('#authLink');
-const authAvatar = $('#authAvatar');
-const authMenu   = $('#authMenu');
-const menuBtn    = $('#authMenuBtn');
-const menuList   = $('#authMenuList');
-const signOutBtn = $('#signOutBtn');
+const authLink = document.getElementById("authLink");
+const authAvatar = document.getElementById("authAvatar");
+const authMenu = document.getElementById("authMenu");
+const authMenuBtn = document.getElementById("authMenuBtn");
+const authMenuList = document.getElementById("authMenuList");
+const signOutBtn = document.getElementById("signOutBtn");
 
-function showSignedOut() {
+function setSignedOut() {
+  if (authAvatar) authAvatar.style.display = "none";
+  if (authMenu) authMenu.style.display = "none";
   if (authLink) {
-    authLink.textContent = 'تسجيل الدخول';
-    authLink.href = '/login';
-    authLink.onclick = null;
+    authLink.href = "/login";
+    authLink.className = "btn btn-ghost";
+    authLink.textContent = "تسجيل الدخول";
+    authLink.style.display = "inline-flex";
   }
-  if (authAvatar) authAvatar.style.display = 'none';
-  if (authMenu)   authMenu.style.display   = 'none';
 }
 
-function showSignedIn(user) {
-  const name =
-    user.displayName ||
-    (user.email ? user.email.split('@')[0] : 'مستخدم');
-
+function setSignedIn(user) {
+  // Show avatar + small dropdown, change link to user's name
   if (authLink) {
-    authLink.textContent = name;
-    authLink.href = '#';
-    authLink.onclick = (e) => {
-      e.preventDefault();
-      if (menuList) {
-        const open = menuList.style.display === 'block';
-        menuList.style.display = open ? 'none' : 'block';
-      }
-    };
+    authLink.textContent = user.displayName || user.email || "حسابي";
+    authLink.href = "/";
+    authLink.className = "btn btn-ghost";
+    authLink.style.display = "inline-flex";
   }
-
   if (authAvatar) {
-    authAvatar.src =
-      user.photoURL ||
-      'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" rx="32" fill="%23222"/><text x="50%" y="56%" dominant-baseline="middle" text-anchor="middle" font-size="28" fill="%23bbb">🙂</text></svg>';
-    authAvatar.style.display = 'inline-block';
+    const url = user.photoURL || "https://ui-avatars.com/api/?name=" + encodeURIComponent(user.displayName || "User");
+    authAvatar.src = url;
+    authAvatar.alt = "avatar";
+    authAvatar.style.display = "inline-block";
   }
+  if (authMenu) authMenu.style.display = "inline-block";
 
-  if (authMenu) authMenu.style.display = 'inline-block';
-
-  // close menu on outside click
-  document.addEventListener('click', (ev) => {
-    if (!authMenu.contains(ev.target)) {
-      if (menuList) menuList.style.display = 'none';
-    }
-  });
-
-  if (signOutBtn) {
-    signOutBtn.onclick = async () => {
-      await signOut(auth);
-      location.replace('/'); // back home after sign out
-    };
+  // If we’re on /login and already signed in, go home
+  if (location.pathname === "/login") {
+    window.location.replace("/");
   }
 }
 
 onAuthStateChanged(auth, (user) => {
-  if (user) {
-    showSignedIn(user);
-    if (location.pathname === '/login') {
-      // already signed in? send home
-      location.replace('/');
-    }
-  } else {
-    showSignedOut();
-  }
+  if (user) setSignedIn(user);
+  else setSignedOut();
+});
+
+// simple dropdown
+authMenuBtn?.addEventListener("click", () => {
+  if (!authMenuList) return;
+  const vis = authMenuList.style.display === "block";
+  authMenuList.style.display = vis ? "none" : "block";
+});
+
+// sign out
+signOutBtn?.addEventListener("click", async () => {
+  await signOut(auth);
+  setSignedOut();
+  window.location.href = "/";
+});
+
+// close menu on outside click
+document.addEventListener("click", (e) => {
+  if (!authMenu || !authMenuList) return;
+  if (!authMenu.contains(e.target)) authMenuList.style.display = "none";
 });
