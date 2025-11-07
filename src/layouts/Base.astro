@@ -1,14 +1,9 @@
 ---
 const { title = "موقع الروايات", description = "" } = Astro.props;
-
-// pass Firebase env to inline script safely
 const e = import.meta.env;
-const FB = {
-  apiKey: e.PUBLIC_FIREBASE_API_KEY,
-  authDomain: e.PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: e.PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: e.PUBLIC_FIREBASE_STORAGE_BUCKET,
-  appId: e.PUBLIC_FIREBASE_APP_ID,
+const SB = {
+  url: e.PUBLIC_SUPABASE_URL,
+  key: e.PUBLIC_SUPABASE_ANON_KEY,
 };
 ---
 
@@ -60,29 +55,17 @@ const FB = {
         display:none; width:28px; height:28px; border-radius:50%;
         border:1px solid var(--stroke); object-fit:cover;
       }
-      #authMenu{ position:relative; display:none }
-      #authMenuList{
-        position:absolute; right:0; top:34px; min-width:160px;
-        background:var(--glass); border:1px solid var(--stroke);
-        border-radius:10px; padding:6px; display:none; z-index:20;
-      }
-
       .btn{
         padding:10px 14px; border-radius:12px; border:1px solid var(--stroke);
         background:transparent; color:var(--ink); cursor:pointer; font-size:.95rem;
       }
 
-      /* ---------- 📱 Mobile tweaks (<=600px) ---------- */
       @media (max-width: 600px) {
         .container{ width:94%; padding:0 .75rem; }
         .nav-inner{ flex-direction:column; align-items:flex-start; height:auto; padding:8px 0; }
         .links{ flex-direction:column; align-items:flex-start; gap:8px; }
         #authArea{ width:100%; justify-content:space-between; }
-        #authLink, #authMenuBtn{ padding:8px 12px; font-size:.95rem; }
-        main.container{ padding-top:10px; }
-        .card{ padding:1rem; }
-        input, button{ font-size:1rem !important; }
-        h1{ font-size:1.35rem; }
+        .btn{ padding:8px 12px; font-size:.95rem; }
       }
     </style>
   </head>
@@ -93,19 +76,14 @@ const FB = {
         <div class="links">
           <a href="/" style="text-decoration:none;color:inherit;font-weight:800">موقع الروايات</a>
           <a href="/">الرئيسية</a>
-          <a href="/novels">كل الروايات</a>
+          <a href="/novels/my-first-novel">كل الفصول</a>
+          <a href="/admin">لوحة الإدارة</a>
         </div>
 
         <div id="authArea">
           <img id="authAvatar" alt="avatar" />
           <a id="authLink" class="btn" href="/login">تسجيل الدخول</a>
-          <div id="authMenu">
-            <button id="authMenuBtn" class="btn" style="padding:6px 10px;">القائمة ▾</button>
-            <div id="authMenuList">
-              <a href="/">الصفحة الرئيسية</a>
-              <button id="signOutBtn" class="btn" style="width:100%;margin-top:6px">تسجيل الخروج</button>
-            </div>
-          </div>
+          <button id="signOutBtn" class="btn" style="display:none">تسجيل الخروج</button>
         </div>
       </div>
     </header>
@@ -114,65 +92,48 @@ const FB = {
       <slot />
     </main>
 
-    <!-- Firebase via CDN; env passed with define:vars -->
-    <script type="module" define:vars={{ FB }}>
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-      import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+    <!-- Supabase auth UI -->
+    <script type="module" define:vars={{ SB }}>
+      import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-      const app  = initializeApp(FB);
-      const auth = getAuth(app);
+      const supabase = createClient(SB.url, SB.key);
 
       const authLink = document.getElementById("authLink");
       const authAvatar = document.getElementById("authAvatar");
-      const authMenu = document.getElementById("authMenu");
-      const authMenuBtn = document.getElementById("authMenuBtn");
-      const authMenuList = document.getElementById("authMenuList");
       const signOutBtn = document.getElementById("signOutBtn");
 
       function setSignedOut() {
         if (authAvatar) authAvatar.style.display = "none";
-        if (authMenu) authMenu.style.display = "none";
-        if (authLink) {
-          authLink.href = "/login";
-          authLink.className = "btn";
-          authLink.textContent = "تسجيل الدخول";
-          authLink.style.display = "inline-flex";
-        }
+        authLink.textContent = "تسجيل الدخول";
+        authLink.href = "/login";
+        signOutBtn.style.display = "none";
       }
-
       function setSignedIn(user) {
-        if (authLink) {
-          authLink.textContent = user.displayName || user.email || "حسابي";
-          authLink.href = "/";
-          authLink.className = "btn";
-          authLink.style.display = "inline-flex";
-        }
+        const name = user.user_metadata?.name || user.email || "حسابي";
+        authLink.textContent = name;
+        authLink.href = "/";
+        signOutBtn.style.display = "inline-flex";
         if (authAvatar) {
-          authAvatar.src =
-            user.photoURL || "https://ui-avatars.com/api/?name=" + encodeURIComponent(user.displayName || "User");
-          authAvatar.alt = "avatar";
+          authAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
           authAvatar.style.display = "inline-block";
         }
-        if (authMenu) authMenu.style.display = "inline-block";
       }
 
-      onAuthStateChanged(auth, (user) => { user ? setSignedIn(user) : setSignedOut(); });
+      async function refresh() {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) setSignedIn(user); else setSignedOut();
+      }
+      refresh();
 
-      authMenuBtn?.addEventListener("click", () => {
-        if (!authMenuList) return;
-        const vis = authMenuList.style.display === "block";
-        authMenuList.style.display = vis ? "none" : "block";
+      supabase.auth.onAuthStateChange((_event, session) => {
+        if (session?.user) setSignedIn(session.user);
+        else setSignedOut();
       });
 
       signOutBtn?.addEventListener("click", async () => {
-        await signOut(auth);
+        await supabase.auth.signOut();
         setSignedOut();
-        window.location.href = "/";
-      });
-
-      document.addEventListener("click", (e) => {
-        if (!authMenu || !authMenuList) return;
-        if (!authMenu.contains(e.target)) authMenuList.style.display = "none";
+        location.href = "/";
       });
     </script>
   </body>

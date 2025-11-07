@@ -1,0 +1,40 @@
+---
+import Base from "@/layouts/Base.astro";
+const e = import.meta.env;
+const SB = { url: e.PUBLIC_SUPABASE_URL, key: e.PUBLIC_SUPABASE_ANON_KEY };
+const { novelId, chapterId } = Astro.params;
+---
+
+<Base title="قراءة الفصل">
+  <article class="card" style="max-width:900px;margin:28px auto;padding:20px;border-radius:16px;">
+    <h1 id="t" style="margin-top:0">{chapterId}</h1>
+    <div id="b" style="white-space:pre-wrap;line-height:1.9"></div>
+    <p id="warn" class="muted" style="margin-top:16px"></p>
+  </article>
+
+  <script type="module" define:vars={{ SB, novelId, chapterId }}>
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+    const supabase = createClient(SB.url, SB.key);
+
+    const t = document.getElementById("t");
+    const b = document.getElementById("b");
+    const warn = document.getElementById("warn");
+
+    async function load(){
+      const { data, error } = await supabase
+        .from("chapters")
+        .select("title, body, published")
+        .eq("novel_id", novelId)
+        .eq("id", chapterId)
+        .maybeSingle();
+
+      if (error) { t.textContent = "خطأ"; b.textContent = error.message; return; }
+      if (!data) { t.textContent = "غير موجود"; return; }
+
+      t.textContent = data.title || chapterId;
+      b.textContent = data.body || "";
+      if (data.published !== true) warn.textContent = "⚠️ هذا الفصل غير منشور.";
+    }
+    load();
+  </script>
+</Base>

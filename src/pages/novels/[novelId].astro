@@ -1,0 +1,41 @@
+---
+import Base from "@/layouts/Base.astro";
+const e = import.meta.env;
+const SB = { url: e.PUBLIC_SUPABASE_URL, key: e.PUBLIC_SUPABASE_ANON_KEY };
+const { novelId } = Astro.params;
+---
+
+<Base title="الفصول">
+  <section class="card" style="max-width:900px;margin:28px auto;padding:20px;border-radius:16px;">
+    <h1 style="margin-top:0">الفصول — {novelId}</h1>
+    <div id="list" style="display:grid;gap:10px"></div>
+  </section>
+
+  <script type="module" define:vars={{ SB, novelId }}>
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+    const supabase = createClient(SB.url, SB.key);
+    const list = document.getElementById("list");
+
+    async function load(){
+      const { data, error } = await supabase
+        .from("chapters")
+        .select("id,title,created_at")
+        .eq("novel_id", novelId)
+        .eq("published", true)
+        .order("created_at", { ascending: false });
+
+      if (error) { list.innerHTML = `<div class='muted'>${error.message}</div>`; return; }
+      if (!data || !data.length) { list.innerHTML = "<div class='muted'>لا يوجد فصول منشورة بعد.</div>"; return; }
+
+      list.innerHTML = "";
+      for (const row of data){
+        const a = document.createElement("a");
+        a.href = `/novels/${novelId}/${row.id}`;
+        a.textContent = row.title || row.id;
+        a.style = "padding:10px;border:1px solid var(--stroke);border-radius:10px;text-decoration:none;color:inherit;background:var(--glass)";
+        list.appendChild(a);
+      }
+    }
+    load();
+  </script>
+</Base>

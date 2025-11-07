@@ -1,0 +1,141 @@
+---
+import Base from "@/layouts/Base.astro";
+const e = import.meta.env;
+const SB = {
+  url: e.PUBLIC_SUPABASE_URL,
+  key: e.PUBLIC_SUPABASE_ANON_KEY,
+};
+---
+
+<Base title="لوحة الإدارة">
+  <section class="card" style="max-width:900px;margin:28px auto;padding:20px;border-radius:16px;">
+    <h1 style="margin-top:0">لوحة الإدارة</h1>
+    <p class="muted">أضف فصولًا جديدة وأدر الأدوار لكل رواية مباشرة من الموقع.</p>
+
+    <div style="display:grid;gap:18px;margin-top:14px">
+      <!-- Add Chapter -->
+      <div class="card" style="padding:16px;border-radius:14px;">
+        <h2 style="margin:0 0 12px">إضافة فصل</h2>
+        <div style="display:grid;gap:10px">
+          <label>معرّف الرواية (novelId) — مثال: my-first-novel</label>
+          <input id="novelId" placeholder="novel-id" style="padding:10px;border-radius:10px;border:1px solid var(--stroke);background:transparent;color:var(--ink)" />
+
+          <label>عنوان الفصل</label>
+          <input id="title" placeholder="عنوان الفصل" style="padding:10px;border-radius:10px;border:1px solid var(--stroke);background:transparent;color:var(--ink)" />
+
+          <label>محتوى الفصل</label>
+          <textarea id="body" rows="10" placeholder="نص الفصل..." style="padding:10px;border-radius:10px;border:1px solid var(--stroke);background:transparent;color:var(--ink)"></textarea>
+
+          <label style="display:flex;gap:8px;align-items:center">
+            <input id="published" type="checkbox" /> نشر علنيًا
+          </label>
+
+          <button id="saveChapter" class="btn" style="width:100%">حفظ الفصل</button>
+          <div id="chapterMsg" class="muted" style="min-height:1.2em"></div>
+        </div>
+      </div>
+
+      <!-- Manage Roles -->
+      <div class="card" style="padding:16px;border-radius:14px;">
+        <h2 style="margin:0 0 12px">إدارة الأدوار</h2>
+        <div style="display:grid;gap:10px">
+          <label>معرّف الرواية (novelId)</label>
+          <input id="rolesNovelId" placeholder="novel-id" style="padding:10px;border-radius:10px;border:1px solid var(--stroke);background:transparent;color:var(--ink)" />
+
+          <div style="display:grid;gap:8px;grid-template-columns:1fr 1fr">
+            <div>
+              <label>أضف كاتبًا (بريد إلكتروني)</label>
+              <input id="writerEmail" placeholder="friend@gmail.com" style="padding:10px;border-radius:10px;border:1px solid var(--stroke);background:transparent;color:var(--ink)" />
+              <button id="addWriter" class="btn" style="margin-top:8px;width:100%">إضافة كاتب</button>
+            </div>
+            <div>
+              <label>أضف مديرًا (بريد إلكتروني)</label>
+              <input id="adminEmail" placeholder="you@example.com" style="padding:10px;border-radius:10px;border:1px solid var(--stroke);background:transparent;color:var(--ink)" />
+              <button id="addAdmin" class="btn" style="margin-top:8px;width:100%">إضافة مدير</button>
+            </div>
+          </div>
+
+          <div id="rolesMsg" class="muted" style="min-height:1.2em"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script type="module" define:vars={{ SB }}>
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+    const supabase = createClient(SB.url, SB.key);
+
+    const $ = (s)=>document.querySelector(s);
+
+    const novelId = $("#novelId");
+    const title = $("#title");
+    const body = $("#body");
+    const published = $("#published");
+    const saveChapter = $("#saveChapter");
+    const chapterMsg = $("#chapterMsg");
+
+    const rolesNovelId = $("#rolesNovelId");
+    const writerEmail = $("#writerEmail");
+    const adminEmail = $("#adminEmail");
+    const addWriter = $("#addWriter");
+    const addAdmin = $("#addAdmin");
+    const rolesMsg = $("#rolesMsg");
+
+    function slugify(s){
+      return (s||"").toString().trim()
+        .toLowerCase()
+        .replace(/[^\u0600-\u06FF\w\s-]/g,"")
+        .replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"")
+        || ("chapter-" + Date.now());
+    }
+    const show = (el, t)=>{ if (el) el.textContent = t || ""; };
+
+    // Require login
+    (async ()=>{
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { alert("سجّل الدخول أولاً."); location.href="/login"; }
+    })();
+
+    // Save chapter
+    saveChapter?.addEventListener("click", async ()=>{
+      show(chapterMsg, "جارٍ الحفظ…");
+      const nId = novelId.value.trim();
+      const t = title.value.trim();
+      const b = body.value.trim();
+      if(!nId || !t || !b){ show(chapterMsg, "املأ جميع الحقول."); return; }
+      const cId = slugify(t);
+
+      const { error } = await supabase.from("chapters").upsert({
+        id: cId, novel_id: nId, title: t, body: b, published: !!published.checked
+      });
+      if (error) { show(chapterMsg, error.message); return; }
+      show(chapterMsg, `تم الحفظ ✅ — /novels/${nId}/${cId}`);
+    });
+
+    // Add roles (admin/writer)
+    async function addRole(nId, email, role){
+      // ensure novel row exists
+      await supabase.from("novels").insert({ id: nId }).select().maybeSingle();
+      const { error } = await supabase.from("roles").insert({ novel_id: nId, email: email.toLowerCase(), role });
+      return error;
+    }
+
+    addWriter?.addEventListener("click", async ()=>{
+      show(rolesMsg, "جارٍ الإضافة…");
+      const nId = rolesNovelId.value.trim();
+      const em = writerEmail.value.trim();
+      if(!nId || !em){ show(rolesMsg, "أدخل novelId والبريد."); return; }
+      const err = await addRole(nId, em, "writer");
+      show(rolesMsg, err ? err.message : `أُضيف الكاتب ✅: ${em}`);
+    });
+
+    addAdmin?.addEventListener("click", async ()=>{
+      show(rolesMsg, "جارٍ الإضافة…");
+      const nId = rolesNovelId.value.trim();
+      const em = adminEmail.value.trim();
+      if(!nId || !em){ show(rolesMsg, "أدخل novelId والبريد."); return; }
+      const err = await addRole(nId, em, "admin");
+      show(rolesMsg, err ? err.message : `أُضيف المدير ✅: ${em}`);
+    });
+  </script>
+</Base>

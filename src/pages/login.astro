@@ -1,124 +1,65 @@
 ---
 import Base from "@/layouts/Base.astro";
-
-// pass Firebase env to inline script safely
 const e = import.meta.env;
-const FB = {
-  apiKey: e.PUBLIC_FIREBASE_API_KEY,
-  authDomain: e.PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: e.PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: e.PUBLIC_FIREBASE_STORAGE_BUCKET,
-  appId: e.PUBLIC_FIREBASE_APP_ID,
+const SB = {
+  url: e.PUBLIC_SUPABASE_URL,
+  key: e.PUBLIC_SUPABASE_ANON_KEY,
 };
 ---
 
 <Base title="تسجيل الدخول">
   <section class="card" style="max-width:620px;margin:36px auto;padding:28px;border-radius:20px;">
     <div style="text-align:center;margin-bottom:18px;">
-      <h1 style="margin:0 0 6px;font-size:clamp(22px,3vw,32px);font-weight:900;letter-spacing:.2px;">
-        تسجيل الدخول
-      </h1>
-      <p class="muted" style="margin:0;">ادخل عالم كاره الشوجو وتابع فصولك المفضّلة.</p>
+      <h1 style="margin:0 0 6px;font-size:clamp(22px,3vw,32px);font-weight:900;">تسجيل الدخول</h1>
+      <p class="muted" style="margin:0;">سجّل دخولك أو أنشئ حسابًا بالبريد الإلكتروني.</p>
     </div>
 
     <div style="display:grid;gap:14px;">
-      <button id="googleBtn"
-        style="width:100%;display:inline-flex;align-items:center;justify-content:center;gap:10px;
-               border:none;border-radius:14px;cursor:pointer;padding:12px 14px;
-               background:linear-gradient(135deg,#6ea8ff 0%,#a475ff 100%);
-               color:#001028;font-weight:800;box-shadow:0 6px 20px rgba(110,168,255,.25);">
-        المتابعة مع Google
-      </button>
-
-      <div class="muted" style="text-align:center;">أو</div>
-
-      <label style="font-weight:700">البريد الإلكتروني</label>
+      <label>البريد الإلكتروني</label>
       <input id="email" type="email" placeholder="name@email.com"
-        style="padding:12px 14px;border-radius:14px;border:1px solid var(--stroke);
-               background:rgba(255,255,255,.06);color:var(--ink);outline:none" />
+        style="padding:12px 14px;border-radius:14px;border:1px solid var(--stroke);background:rgba(255,255,255,.06);color:var(--ink);" />
 
-      <label style="font-weight:700">كلمة المرور</label>
+      <label>كلمة المرور</label>
       <input id="password" type="password" placeholder="••••••••"
-        style="padding:12px 14px;border-radius:14px;border:1px solid var(--stroke);
-               background:rgba(255,255,255,.06);color:var(--ink);outline:none" />
+        style="padding:12px 14px;border-radius:14px;border:1px solid var(--stroke);background:rgba(255,255,255,.06);color:var(--ink);" />
 
       <div style="display:flex;gap:10px;justify-content:space-between;">
-        <button id="emailLogin" class="btn" style="flex:1;padding:12px;border-radius:14px;border:1px solid var(--stroke);
-               background:rgba(255,255,255,.12);color:var(--ink);font-weight:700;">
-          تسجيل الدخول
-        </button>
-        <button id="emailRegister" class="btn" style="flex:1;padding:12px;border-radius:14px;border:1px solid var(--stroke);
-               background:transparent;color:var(--ink);font-weight:700;">
-          إنشاء حساب
-        </button>
+        <button id="emailLogin" class="btn" style="flex:1;">تسجيل الدخول</button>
+        <button id="emailRegister" class="btn" style="flex:1;">إنشاء حساب</button>
       </div>
 
-      <button id="logoutBtn" class="btn btn-ghost" style="display:none;">تسجيل الخروج</button>
       <p id="msg" class="muted" style="min-height:1.2em;text-align:center;margin:6px 0 0;"></p>
     </div>
   </section>
 
-  <!-- all client logic here; uses Firebase CDN + env from define:vars -->
-  <script type="module" define:vars={{ FB }}>
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-    import {
-      getAuth, GoogleAuthProvider, signInWithPopup,
-      signInWithEmailAndPassword, createUserWithEmailAndPassword,
-      signOut, onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+  <script type="module" define:vars={{ SB }}>
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+    const supabase = createClient(SB.url, SB.key);
 
-    const app   = initializeApp(FB);
-    const auth  = getAuth(app);
-    const gProv = new GoogleAuthProvider();
-
-    const $ = (s) => document.querySelector(s);
-    const googleBtn = $("#googleBtn");
-    const emailLogin = $("#emailLogin");
-    const emailRegister = $("#emailRegister");
-    const logoutBtn = $("#logoutBtn");
+    const $ = (s)=>document.querySelector(s);
     const email = $("#email");
     const password = $("#password");
+    const emailLogin = $("#emailLogin");
+    const emailRegister = $("#emailRegister");
     const msg = $("#msg");
-    const show = (t) => { if (msg) msg.textContent = t || ""; };
+    const show = (t)=>{ if (msg) msg.textContent = t || ""; };
 
-    googleBtn?.addEventListener("click", async () => {
-      show("جاري تسجيل الدخول…");
-      try {
-        await signInWithPopup(auth, gProv);
-        window.location.assign("/");
-      } catch (e) { console.error(e); show(e?.message || e?.code || "حدث خطأ"); }
-    });
-
-    emailLogin?.addEventListener("click", async () => {
+    emailLogin?.addEventListener("click", async ()=>{
       show("…");
-      try {
-        await signInWithEmailAndPassword(auth, email.value.trim(), password.value);
-        window.location.assign("/");
-      } catch (e) { console.error(e); show(e?.message || e?.code || "حدث خطأ"); }
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.value.trim(),
+        password: password.value
+      });
+      if (error) { show(error.message); } else { location.href = "/"; }
     });
 
-    emailRegister?.addEventListener("click", async () => {
+    emailRegister?.addEventListener("click", async ()=>{
       show("…");
-      try {
-        await createUserWithEmailAndPassword(auth, email.value.trim(), password.value);
-        window.location.assign("/");
-      } catch (e) { console.error(e); show(e?.message || e?.code || "حدث خطأ"); }
-    });
-
-    logoutBtn?.addEventListener("click", async () => {
-      await signOut(auth);
-      show("تم تسجيل الخروج.");
-    });
-
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        if (logoutBtn) logoutBtn.style.display = "inline-flex";
-        show(`مرحبًا ${user.displayName || user.email}`);
-        if (location.pathname === "/login") window.location.replace("/");
-      } else {
-        if (logoutBtn) logoutBtn.style.display = "none";
-        show("");
-      }
+      const { error } = await supabase.auth.signUp({
+        email: email.value.trim(),
+        password: password.value
+      });
+      if (error) { show(error.message); } else { show("تم إنشاء الحساب ✅ — تحقق من بريدك إن لزم"); }
     });
   </script>
 </Base>
