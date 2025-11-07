@@ -1,6 +1,15 @@
 ---
 import Base from "@/layouts/Base.astro";
+
+// pass Firebase env to inline script safely
 const e = import.meta.env;
+const FB = {
+  apiKey: e.PUBLIC_FIREBASE_API_KEY,
+  authDomain: e.PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: e.PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: e.PUBLIC_FIREBASE_STORAGE_BUCKET,
+  appId: e.PUBLIC_FIREBASE_APP_ID,
+};
 ---
 
 <Base title="تسجيل الدخول">
@@ -49,8 +58,8 @@ const e = import.meta.env;
     </div>
   </section>
 
-  <!-- Pure CDN client-side logic: no bundling, no /src paths -->
-  <script type="module">
+  <!-- all client logic here; uses Firebase CDN + env from define:vars -->
+  <script type="module" define:vars={{ FB }}>
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
     import {
       getAuth, GoogleAuthProvider, signInWithPopup,
@@ -58,15 +67,7 @@ const e = import.meta.env;
       signOut, onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
-    const firebaseConfig = {
-      apiKey:        ${JSON.stringify(e.PUBLIC_FIREBASE_API_KEY)},
-      authDomain:    ${JSON.stringify(e.PUBLIC_FIREBASE_AUTH_DOMAIN)},
-      projectId:     ${JSON.stringify(e.PUBLIC_FIREBASE_PROJECT_ID)},
-      storageBucket: ${JSON.stringify(e.PUBLIC_FIREBASE_STORAGE_BUCKET)},
-      appId:         ${JSON.stringify(e.PUBLIC_FIREBASE_APP_ID)},
-    };
-
-    const app   = initializeApp(firebaseConfig);
+    const app   = initializeApp(FB);
     const auth  = getAuth(app);
     const gProv = new GoogleAuthProvider();
 
@@ -85,9 +86,7 @@ const e = import.meta.env;
       try {
         await signInWithPopup(auth, gProv);
         window.location.assign("/");
-      } catch (e) {
-        console.error(e); show(e?.message || e?.code || "حدث خطأ");
-      }
+      } catch (e) { console.error(e); show(e?.message || e?.code || "حدث خطأ"); }
     });
 
     emailLogin?.addEventListener("click", async () => {
@@ -95,9 +94,7 @@ const e = import.meta.env;
       try {
         await signInWithEmailAndPassword(auth, email.value.trim(), password.value);
         window.location.assign("/");
-      } catch (e) {
-        console.error(e); show(e?.message || e?.code || "حدث خطأ");
-      }
+      } catch (e) { console.error(e); show(e?.message || e?.code || "حدث خطأ"); }
     });
 
     emailRegister?.addEventListener("click", async () => {
@@ -105,9 +102,7 @@ const e = import.meta.env;
       try {
         await createUserWithEmailAndPassword(auth, email.value.trim(), password.value);
         window.location.assign("/");
-      } catch (e) {
-        console.error(e); show(e?.message || e?.code || "حدث خطأ");
-      }
+      } catch (e) { console.error(e); show(e?.message || e?.code || "حدث خطأ"); }
     });
 
     logoutBtn?.addEventListener("click", async () => {
