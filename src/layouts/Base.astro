@@ -1,6 +1,6 @@
 ---
 const { title = "موقع الروايات", description = "" } = Astro.props;
-import authUiUrl from "../lib/auth-ui.js?url";
+import authUiUrl from "../lib/auth-ui.js?url"; // bundled URL
 ---
 <html lang="ar" dir="rtl">
   <head>
@@ -8,126 +8,44 @@ import authUiUrl from "../lib/auth-ui.js?url";
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
-
-    <!-- Arabic fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;900&family=Tajawal:wght@400;500&display=swap" rel="stylesheet" />
-
     <style>
-      :root{
-        --font-head: 'Cairo', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-        --font-body: 'Tajawal', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-
-        --bg: #0b0f14;
-        --ink: #e7e9ee;
-        --muted: #b3b9c7;
-        --stroke: rgba(255,255,255,.08);
-        --glass: rgba(255,255,255,.04);
-        --accent: #6ea8ff;
-      }
-
-      html, body { height:100%; font-family: var(--font-body); }
-      h1, h2, h3 { font-family: var(--font-head); }
-      *{ box-sizing:border-box }
-      a{ color:inherit }
-
-      body{
-        margin:0;
-        color:var(--ink);
-        background:
-          radial-gradient(1200px 600px at 75% -10%, rgba(110,168,255,.07), transparent 60%),
-          radial-gradient(1000px 500px at 10% 110%, rgba(190,120,255,.06), transparent 55%),
-          var(--bg);
-        line-height:1.6;
-      }
-
-      .container{ width: min(1100px, 92vw); margin-inline:auto }
-
-      /* Topbar */
-      header.nav{
-        position: sticky; top:0; z-index:50;
-        backdrop-filter: blur(10px);
-        background: rgba(5,7,10,.55);
-        border-bottom:1px solid var(--stroke);
-      }
-      .nav-inner{
-        display:flex; align-items:center; justify-content:space-between;
-        height:56px;
-      }
-      .brand{
-        font-weight:800; letter-spacing:.3px;
-        text-decoration:none; color:var(--ink);
-      }
-
-      .links{ display:flex; gap:14px; align-items:center }
-      .links a{
-        text-decoration:none; color:var(--muted);
-        padding:6px 10px; border-radius:10px;
-      }
-      .links a:hover{ background:var(--glass); color:var(--ink) }
-
-      .btn{
-        display:inline-flex; align-items:center; justify-content:center;
-        padding:10px 14px; border-radius:12px; text-decoration:none;
-        background:var(--accent); color:#001028; font-weight:600; border:none; cursor:pointer
-      }
-      .btn-ghost{
-        background:transparent; color:var(--ink);
-        border:1px solid var(--stroke);
-      }
-
-      .card{
-        background: var(--glass);
-        border:1px solid var(--stroke);
-        border-radius:16px;
-      }
+      :root{ --ink:#e7e9ee; --muted:#b3b9c7; --stroke:rgba(255,255,255,.08); --glass:rgba(255,255,255,.04); --bg:#0b0f14; }
+      html,body{height:100%}
+      body{margin:0;color:var(--ink);background:
+        radial-gradient(1200px 600px at 75% -10%, rgba(110,168,255,.07), transparent 60%),
+        radial-gradient(1000px 500px at 10% 110%, rgba(190,120,255,.06), transparent 55%),
+        var(--bg);}
+      .container{ width:min(1100px,92vw); margin-inline:auto }
+      header.nav{position:sticky; top:0; z-index:50; backdrop-filter:blur(10px); background:rgba(5,7,10,.55); border-bottom:1px solid var(--stroke)}
+      .nav-inner{display:flex; align-items:center; justify-content:space-between; height:56px}
+      .links{display:flex; gap:14px; align-items:center}
+      .card{ background:var(--glass); border:1px solid var(--stroke); border-radius:16px }
       .muted{ color:var(--muted) }
-
-      main{ padding: 18px 0 40px }
-
-      footer{
-        border-top:1px solid var(--stroke); color:var(--muted);
-        padding:18px 0 28px; text-align:center; margin-top:28px;
-      }
-
-      /* Auth UI bits */
-      #authArea{ display:flex; align-items:center; gap:10px; }
-      #authAvatar{
-        border-radius:50%;
-        border:1px solid var(--stroke);
-        width:28px; height:28px; object-fit:cover;
-        display:none;
-      }
-      #authMenu{ position:relative; display:none; }
-      #authMenuList{
-        position:absolute; right:0; top:34px; min-width:160px;
-        background:var(--glass); border:1px solid var(--stroke); border-radius:10px;
-        padding:6px; display:none; z-index:20;
-      }
-      #authMenuList a{ display:block; padding:6px 8px; border-radius:8px; text-decoration:none; color:var(--muted); }
-      #authMenuList a:hover{ background:var(--glass); color:var(--ink); }
-      #signOutBtn{ width:100%; margin-top:6px; }
+      #authArea{ display:flex; align-items:center; gap:10px }
+      #authAvatar{ display:none; width:28px; height:28px; border-radius:50%; border:1px solid var(--stroke); object-fit:cover }
+      #authMenu{ position:relative; display:none }
+      #authMenuList{ position:absolute; right:0; top:34px; min-width:160px; background:var(--glass); border:1px solid var(--stroke); border-radius:10px; padding:6px; display:none; z-index:20 }
+      .btn{ padding:10px 14px; border-radius:12px; border:1px solid var(--stroke); background:transparent; color:var(--ink); cursor:pointer }
     </style>
   </head>
-
   <body>
     <header class="nav">
       <div class="container nav-inner">
         <div class="links">
-          <a href="/" class="brand">موقع الروايات</a>
+          <a href="/" style="text-decoration:none;color:inherit;font-weight:800">موقع الروايات</a>
           <a href="/">الرئيسية</a>
           <a href="/novels">كل الروايات</a>
         </div>
 
-        <!-- Auth area (updated by auth-ui.js) -->
         <div id="authArea">
           <img id="authAvatar" alt="avatar" />
-          <a id="authLink" class="btn btn-ghost" href="/login">تسجيل الدخول</a>
-
+          <a id="authLink" class="btn" href="/login">تسجيل الدخول</a>
           <div id="authMenu">
-            <button id="authMenuBtn" class="btn btn-ghost" style="padding:6px 10px;">القائمة ▾</button>
+            <button id="authMenuBtn" class="btn" style="padding:6px 10px;">القائمة ▾</button>
             <div id="authMenuList">
               <a href="/">الصفحة الرئيسية</a>
-              <button id="signOutBtn" class="btn">تسجيل الخروج</button>
+              <button id="signOutBtn" class="btn" style="width:100%;margin-top:6px">تسجيل الخروج</button>
             </div>
           </div>
         </div>
@@ -138,11 +56,7 @@ import authUiUrl from "../lib/auth-ui.js?url";
       <slot />
     </main>
 
-    <footer>
-      مبنيّ بـ Astro • أداء CDN كامل — {new Date().getFullYear()} ©
-    </footer>
-
-    <!-- Load site-wide auth script via ?url so it works on Vercel -->
+    <!-- one external module; NO inline imports -->
     <script type="module" src={authUiUrl}></script>
   </body>
 </html>

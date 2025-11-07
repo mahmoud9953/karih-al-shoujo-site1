@@ -1,7 +1,6 @@
 ---
 import Base from "@/layouts/Base.astro";
-// IMPORTANT: ask Vite for the final URL of the client script
-import clientScriptUrl from "./login.client.js?url";
+import clientScriptUrl from "./login.client.js?url"; // bundled URL
 ---
 
 <Base title="تسجيل الدخول">
@@ -10,19 +9,15 @@ import clientScriptUrl from "./login.client.js?url";
       <h1 style="margin:0 0 6px;font-size:clamp(22px,3vw,32px);font-weight:900;letter-spacing:.2px;">
         تسجيل الدخول
       </h1>
-      <p class="muted" style="margin:0;">
-        ادخل عالم كاره الشوجو وتابع فصولك المفضّلة.
-      </p>
+      <p class="muted" style="margin:0;">ادخل عالم كاره الشوجو وتابع فصولك المفضّلة.</p>
     </div>
 
     <div style="display:grid;gap:14px;">
       <button id="googleBtn"
-        style="
-          width:100%;display:inline-flex;align-items:center;justify-content:center;gap:10px;
-          border:none;border-radius:14px;cursor:pointer;padding:12px 14px;
-          background:linear-gradient(135deg,#6ea8ff 0%,#a475ff 100%);
-          color:#001028;font-weight:800;box-shadow:0 6px 20px rgba(110,168,255,.25);
-          transition:transform .06s;">
+        style="width:100%;display:inline-flex;align-items:center;justify-content:center;gap:10px;
+               border:none;border-radius:14px;cursor:pointer;padding:12px 14px;
+               background:linear-gradient(135deg,#6ea8ff 0%,#a475ff 100%);
+               color:#001028;font-weight:800;box-shadow:0 6px 20px rgba(110,168,255,.25);">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="margin-inline-start:6px">
           <path d="M12 20.5c4.7 0 8.5-3.8 8.5-8.5 0-.6 0-1.1-.1-1.7H12v3.2h4.8c-.2 1.3-1 2.4-2.1 3.1v2.6c3 0 5.5-2 6.4-4.7" fill="#4285F4"/>
           <path d="M12 20.5c2.6 0 4.8-.9 6.4-2.5l-3.1-2.6c-.9.6-2 .9-3.3.9-2.5 0-4.6-1.7-5.3-4H3.4v2.5C5 18.7 8.2 20.5 12 20.5z" fill="#34A853"/>
@@ -45,24 +40,15 @@ import clientScriptUrl from "./login.client.js?url";
                background:rgba(255,255,255,.06);color:var(--ink);outline:none" />
 
       <div style="display:flex;gap:10px;justify-content:space-between;">
-        <button id="emailLogin" class="btn" style="
-          flex:1;padding:12px;border-radius:14px;border:1px solid var(--stroke);
-          background:rgba(255,255,255,.12);color:var(--ink);font-weight:700;">
+        <button id="emailLogin" class="btn" style="flex:1;padding:12px;border-radius:14px;border:1px solid var(--stroke);
+               background:rgba(255,255,255,.12);color:var(--ink);font-weight:700;">
           تسجيل الدخول
         </button>
-        <button id="emailRegister" class="btn" style="
-          flex:1;padding:12px;border-radius:14px;border:1px solid var(--stroke);
-          background:transparent;color:var(--ink);font-weight:700;">
+        <button id="emailRegister" class="btn" style="flex:1;padding:12px;border-radius:14px;border:1px solid var(--stroke);
+               background:transparent;color:var(--ink);font-weight:700;">
           إنشاء حساب
         </button>
       </div>
 
       <button id="logoutBtn" class="btn btn-ghost" style="display:none;">تسجيل الخروج</button>
-
-      <p id="msg" class="muted" style="min-height:1.2em;text-align:center;margin:6px 0 0;"></p>
-    </div>
-  </section>
-
-  <!-- Use the compiled asset URL so there are no 404s in production -->
-  <script type="module" src={clientScriptUrl}></script>
-</Base>
+      <p id="msg" class="muted" style="min-height:1.2em;text-align:center;margin:6px 0 0;">

@@ -1,5 +1,5 @@
 // src/pages/login.client.js
-import { auth, googleProvider } from "../lib/firebase.js"; // RELATIVE import (no /src/)
+import { auth, googleProvider } from "../lib/firebase.js";
 import {
   signInWithPopup,
   signInWithEmailAndPassword,
