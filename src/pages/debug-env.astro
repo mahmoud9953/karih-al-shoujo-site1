@@ -3,9 +3,6 @@ const e = import.meta.env;
 ---
 <h1>Env check</h1>
 <ul>
-  <li>PUBLIC_FIREBASE_API_KEY: {e.PUBLIC_FIREBASE_API_KEY ? '✅ set' : '❌ missing'}</li>
-  <li>PUBLIC_FIREBASE_AUTH_DOMAIN: {e.PUBLIC_FIREBASE_AUTH_DOMAIN || '❌ missing'}</li>
-  <li>PUBLIC_FIREBASE_PROJECT_ID: {e.PUBLIC_FIREBASE_PROJECT_ID || '❌ missing'}</li>
-  <li>PUBLIC_FIREBASE_STORAGE_BUCKET: {e.PUBLIC_FIREBASE_STORAGE_BUCKET || '❌ missing'}</li>
-  <li>PUBLIC_FIREBASE_APP_ID: {e.PUBLIC_FIREBASE_APP_ID || '❌ missing'}</li>
+  <li>PUBLIC_SUPABASE_URL: {e.PUBLIC_SUPABASE_URL ? '✅ set' : '❌ missing'}</li>
+  <li>PUBLIC_SUPABASE_ANON_KEY: {e.PUBLIC_SUPABASE_ANON_KEY ? '✅ set' : '❌ missing'}</li>
 </ul>
