@@ -1,5 +1,6 @@
 ---
 const { title = "موقع الروايات", description = "" } = Astro.props;
+import authUiUrl from "../lib/auth-ui.js?url";
 ---
 <html lang="ar" dir="rtl">
   <head>
@@ -67,7 +68,7 @@ const { title = "موقع الروايات", description = "" } = Astro.props;
       .btn{
         display:inline-flex; align-items:center; justify-content:center;
         padding:10px 14px; border-radius:12px; text-decoration:none;
-        background:var(--accent); color:#001028; font-weight:600; border:none; cursor:pointer;
+        background:var(--accent); color:#001028; font-weight:600; border:none; cursor:pointer
       }
       .btn-ghost{
         background:transparent; color:var(--ink);
@@ -141,8 +142,7 @@ const { title = "موقع الروايات", description = "" } = Astro.props;
       مبنيّ بـ Astro • أداء CDN كامل — {new Date().getFullYear()} ©
     </footer>
 
-    <!-- Small client script that turns the "تسجيل الدخول" into username + avatar and handles logout & redirect -->
-    <script type="module" src={Astro.resolve("../lib/auth-ui.js")}></script>
-
+    <!-- Load site-wide auth script via ?url so it works on Vercel -->
+    <script type="module" src={authUiUrl}></script>
   </body>
 </html>

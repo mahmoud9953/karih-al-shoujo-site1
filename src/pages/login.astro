@@ -1,5 +1,6 @@
 ---
 import Base from "@/layouts/Base.astro";
+import clientScriptUrl from "./login.client.js?url";
 ---
 
 <Base title="تسجيل الدخول">
@@ -33,6 +34,6 @@ import Base from "@/layouts/Base.astro";
     </div>
   </section>
 
-  <!-- IMPORTANT: use Astro.resolve so this works on Vercel -->
-  <script type="module" src={Astro.resolve("./login.client.js")}></script>
+  <!-- Vite emits a final URL for this module -->
+  <script type="module" src={clientScriptUrl}></script>
 </Base>
