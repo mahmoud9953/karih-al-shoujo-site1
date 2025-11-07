@@ -17,10 +17,7 @@ const SB = {
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;900&family=Tajawal:wght@400;500&display=swap" rel="stylesheet" />
 
     <style>
-      :root{
-        --ink:#e7e9ee; --muted:#b3b9c7; --stroke:rgba(255,255,255,.08);
-        --glass:rgba(255,255,255,.04); --bg:#0b0f14;
-      }
+      :root{ --ink:#e7e9ee; --muted:#b3b9c7; --stroke:rgba(255,255,255,.08); --glass:rgba(255,255,255,.04); --bg:#0b0f14; }
       html,body{height:100%}
       body{
         margin:0;color:var(--ink);
@@ -34,16 +31,8 @@ const SB = {
 
       .container{ width:min(1100px,92vw); margin-inline:auto; padding:0 1rem; }
 
-      header.nav{
-        position:sticky; top:0; z-index:50;
-        backdrop-filter:blur(10px);
-        background:rgba(5,7,10,.55);
-        border-bottom:1px solid var(--stroke);
-      }
-      .nav-inner{
-        display:flex; align-items:center; justify-content:space-between;
-        height:56px; gap:12px; flex-wrap:wrap;
-      }
+      header.nav{ position:sticky; top:0; z-index:50; backdrop-filter:blur(10px); background:rgba(5,7,10,.55); border-bottom:1px solid var(--stroke) }
+      .nav-inner{ display:flex; align-items:center; justify-content:space-between; height:56px; gap:12px; flex-wrap:wrap; }
       .links{ display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
       .links a{ color:var(--ink); text-decoration:none; font-weight:600; }
 
@@ -51,14 +40,8 @@ const SB = {
       .muted{ color:var(--muted) }
 
       #authArea{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-      #authAvatar{
-        display:none; width:28px; height:28px; border-radius:50%;
-        border:1px solid var(--stroke); object-fit:cover;
-      }
-      .btn{
-        padding:10px 14px; border-radius:12px; border:1px solid var(--stroke);
-        background:transparent; color:var(--ink); cursor:pointer; font-size:.95rem;
-      }
+      #authAvatar{ display:none; width:28px; height:28px; border-radius:50%; border:1px solid var(--stroke); object-fit:cover; }
+      .btn{ padding:10px 14px; border-radius:12px; border:1px solid var(--stroke); background:transparent; color:var(--ink); cursor:pointer; font-size:.95rem; }
 
       @media (max-width: 600px) {
         .container{ width:94%; padding:0 .75rem; }
@@ -77,7 +60,7 @@ const SB = {
           <a href="/" style="text-decoration:none;color:inherit;font-weight:800">موقع الروايات</a>
           <a href="/">الرئيسية</a>
           <a href="/novels/my-first-novel">كل الفصول</a>
-          <a href="/admin">لوحة الإدارة</a>
+          <a id="adminLink" href="/admin" style="display:none">لوحة الإدارة</a>
         </div>
 
         <div id="authArea">
@@ -92,21 +75,21 @@ const SB = {
       <slot />
     </main>
 
-    <!-- Supabase auth UI -->
     <script type="module" define:vars={{ SB }}>
       import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-
       const supabase = createClient(SB.url, SB.key);
 
       const authLink = document.getElementById("authLink");
       const authAvatar = document.getElementById("authAvatar");
       const signOutBtn = document.getElementById("signOutBtn");
+      const adminLink = document.getElementById("adminLink");
 
       function setSignedOut() {
         if (authAvatar) authAvatar.style.display = "none";
         authLink.textContent = "تسجيل الدخول";
         authLink.href = "/login";
         signOutBtn.style.display = "none";
+        if (adminLink) adminLink.style.display = "none";
       }
       function setSignedIn(user) {
         const name = user.user_metadata?.name || user.email || "حسابي";
@@ -121,13 +104,30 @@ const SB = {
 
       async function refresh() {
         const { data: { user } } = await supabase.auth.getUser();
-        if (user) setSignedIn(user); else setSignedOut();
+        if (!user) { setSignedOut(); return; }
+        setSignedIn(user);
+
+        // 🔒 Show Admin only if user has an admin role anywhere
+        const { data: roles, error } = await supabase
+          .from("roles")
+          .select("role")
+          .eq("email", user.email);
+
+        if (!error && roles?.some(r => r.role === "admin")) {
+          if (adminLink) adminLink.style.display = "inline-block";
+        } else {
+          if (adminLink) adminLink.style.display = "none";
+        }
       }
       refresh();
 
       supabase.auth.onAuthStateChange((_event, session) => {
-        if (session?.user) setSignedIn(session.user);
-        else setSignedOut();
+        if (session?.user) {
+          setSignedIn(session.user);
+          refresh(); // re-check roles
+        } else {
+          setSignedOut();
+        }
       });
 
       signOutBtn?.addEventListener("click", async () => {

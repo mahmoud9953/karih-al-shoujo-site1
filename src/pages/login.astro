@@ -11,17 +11,31 @@ const SB = {
   <section class="card" style="max-width:620px;margin:36px auto;padding:28px;border-radius:20px;">
     <div style="text-align:center;margin-bottom:18px;">
       <h1 style="margin:0 0 6px;font-size:clamp(22px,3vw,32px);font-weight:900;">تسجيل الدخول</h1>
-      <p class="muted" style="margin:0;">سجّل دخولك أو أنشئ حسابًا بالبريد الإلكتروني.</p>
+      <p class="muted" style="margin:0;">سجّل دخولك بالبريد أو Google.</p>
     </div>
 
     <div style="display:grid;gap:14px;">
+      <!-- Google -->
+      <button id="googleBtn"
+        style="width:100%;display:inline-flex;align-items:center;justify-content:center;gap:10px;
+               border:none;border-radius:14px;cursor:pointer;padding:12px 14px;
+               background:linear-gradient(135deg,#6ea8ff 0%,#a475ff 100%);
+               color:#001028;font-weight:800;box-shadow:0 6px 20px rgba(110,168,255,.25);">
+        المتابعة مع Google
+      </button>
+
+      <div class="muted" style="text-align:center;">أو</div>
+
+      <!-- Email / Password -->
       <label>البريد الإلكتروني</label>
       <input id="email" type="email" placeholder="name@email.com"
-        style="padding:12px 14px;border-radius:14px;border:1px solid var(--stroke);background:rgba(255,255,255,.06);color:var(--ink);" />
+        style="padding:12px 14px;border-radius:14px;border:1px solid var(--stroke);
+               background:rgba(255,255,255,.06);color:var(--ink);" />
 
       <label>كلمة المرور</label>
       <input id="password" type="password" placeholder="••••••••"
-        style="padding:12px 14px;border-radius:14px;border:1px solid var(--stroke);background:rgba(255,255,255,.06);color:var(--ink);" />
+        style="padding:12px 14px;border-radius:14px;border:1px solid var(--stroke);
+               background:rgba(255,255,255,.06);color:var(--ink);" />
 
       <div style="display:flex;gap:10px;justify-content:space-between;">
         <button id="emailLogin" class="btn" style="flex:1;">تسجيل الدخول</button>
@@ -41,25 +55,50 @@ const SB = {
     const password = $("#password");
     const emailLogin = $("#emailLogin");
     const emailRegister = $("#emailRegister");
+    const googleBtn = $("#googleBtn");
     const msg = $("#msg");
     const show = (t)=>{ if (msg) msg.textContent = t || ""; };
 
+    // If already signed in, go home
+    (async ()=>{
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) location.replace("/");
+    })();
+
+    // Email login
     emailLogin?.addEventListener("click", async ()=>{
       show("…");
       const { error } = await supabase.auth.signInWithPassword({
         email: email.value.trim(),
         password: password.value
       });
-      if (error) { show(error.message); } else { location.href = "/"; }
+      if (error) show(error.message); else location.href = "/";
     });
 
+    // Email signup
     emailRegister?.addEventListener("click", async ()=>{
       show("…");
       const { error } = await supabase.auth.signUp({
         email: email.value.trim(),
         password: password.value
       });
-      if (error) { show(error.message); } else { show("تم إنشاء الحساب ✅ — تحقق من بريدك إن لزم"); }
+      if (error) show(error.message);
+      else show("تم إنشاء الحساب ✅ — إذا لزم الأمر افحص بريدك للتأكيد");
+    });
+
+    // Google OAuth
+    googleBtn?.addEventListener("click", async ()=>{
+      show("جارٍ فتح Google…");
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${location.origin}/login` } // returns here then we redirect home
+      });
+      if (error) show(error.message);
+    });
+
+    // If OAuth returned here with a session, redirect home
+    supabase.auth.onAuthStateChange((_evt, session)=>{
+      if (session?.user) location.replace("/");
     });
   </script>
 </Base>
