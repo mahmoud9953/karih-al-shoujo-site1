@@ -1,31 +1,67 @@
 ---
 import Base from "@/layouts/Base.astro";
-import clientScriptUrl from "./login.client.js?url";
+
+// Robust way to produce the final built URL for the client script:
+const clientUrl = new URL("./login.client.js", import.meta.url).pathname;
 ---
 
 <Base title="تسجيل الدخول">
-  <section class="card" style="max-width:560px;margin:28px auto;padding:22px;">
-    <h1 style="margin:0 0 8px; text-align:center;">تسجيل الدخول</h1>
-    <p class="muted" style="text-align:center; margin:0 0 16px;">
-      ادخل عالم كاره الشوجو وتابع فصولك المفضّلة.
-    </p>
+  <section class="card" style="max-width:620px;margin:36px auto;padding:28px;border-radius:20px;">
+    <div style="text-align:center;margin-bottom:18px;">
+      <h1 style="margin:0 0 6px;font-size:clamp(22px,3vw,32px);font-weight:900;letter-spacing:.2px;">
+        تسجيل الدخول
+      </h1>
+      <p class="muted" style="margin:0;">
+        ادخل عالم كاره الشوجو وتابع فصولك المفضّلة.
+      </p>
+    </div>
 
-    <div style="display:grid; gap:10px;">
-      <button id="googleBtn" class="btn" style="width:100%;">المتابعة مع Google</button>
+    <!-- Modern buttons/inputs -->
+    <div style="display:grid;gap:14px;">
+      <!-- Google button -->
+      <button id="googleBtn"
+        style="
+          width:100%;display:inline-flex;align-items:center;justify-content:center;gap:10px;
+          border:none;border-radius:14px;cursor:pointer;padding:12px 14px;
+          background:linear-gradient(135deg,#6ea8ff 0%,#a475ff 100%);
+          color:#001028;font-weight:800;box-shadow:0 6px 20px rgba(110,168,255,.25);
+          transition:transform .06s;
+        "
+        onmousedown="this.style.transform='translateY(1px)';"
+        onmouseup="this.style.transform='';"
+        >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 20.5c4.7 0 8.5-3.8 8.5-8.5 0-.6 0-1.1-.1-1.7H12v3.2h4.8c-.2 1.3-1 2.4-2.1 3.1v2.6c3 0 5.5-2 6.4-4.7" fill="#4285F4"/>
+          <path d="M12 20.5c2.6 0 4.8-.9 6.4-2.5l-3.1-2.6c-.9.6-2 .9-3.3.9-2.5 0-4.6-1.7-5.3-4H3.4v2.5C5 18.7 8.2 20.5 12 20.5z" fill="#34A853"/>
+          <path d="M6.7 12c-.1-.4-.2-.9-.2-1.4s.1-1 .2-1.4V6.7H3.4C2.8 8 2.5 9.5 2.5 11s.3 3 .9 4.3l3.3-2.8z" fill="#FBBC05"/>
+          <path d="M12 5.5c1.4 0 2.6.5 3.6 1.4l2.7-2.7C16.8 2.7 14.6 1.9 12 1.9 8.2 1.9 5 3.7 3.4 6.7l3.3 2.5c.8-2.3 2.9-3.7 5.3-3.7z" fill="#EA4335"/>
+        </svg>
+        المتابعة مع Google
+      </button>
 
       <div class="muted" style="text-align:center;">أو</div>
 
-      <label>البريد الإلكتروني</label>
+      <label style="font-weight:700">البريد الإلكتروني</label>
       <input id="email" type="email" placeholder="name@email.com"
-             style="padding:10px;border-radius:10px;border:1px solid var(--stroke);background:transparent;color:var(--ink);" />
+        style="padding:12px 14px;border-radius:14px;border:1px solid var(--stroke);
+               background:rgba(255,255,255,.06);color:var(--ink);outline:none" />
 
-      <label>كلمة المرور</label>
+      <label style="font-weight:700">كلمة المرور</label>
       <input id="password" type="password" placeholder="••••••••"
-             style="padding:10px;border-radius:10px;border:1px solid var(--stroke);background:transparent;color:var(--ink);" />
+        style="padding:12px 14px;border-radius:14px;border:1px solid var(--stroke);
+               background:rgba(255,255,255,.06);color:var(--ink);outline:none" />
 
-      <div style="display:flex; gap:8px; justify-content:space-between;">
-        <button id="emailLogin" class="btn" style="flex:1;">تسجيل الدخول</button>
-        <button id="emailRegister" class="btn btn-ghost" style="flex:1;">إنشاء حساب</button>
+      <div style="display:flex;gap:10px;justify-content:space-between;">
+        <button id="emailLogin" class="btn" style="
+          flex:1;padding:12px;border-radius:14px;border:1px solid var(--stroke);
+          background:rgba(255,255,255,.12);color:var(--ink);font-weight:700;">
+          تسجيل الدخول
+        </button>
+        <button id="emailRegister" class="btn" style="
+          flex:1;padding:12px;border-radius:14px;border:1px solid var(--stroke);
+          background:transparent;color:var(--ink);font-weight:700;">
+          إنشاء حساب
+        </button>
       </div>
 
       <button id="logoutBtn" class="btn btn-ghost" style="display:none;">تسجيل الخروج</button>
@@ -34,6 +70,6 @@ import clientScriptUrl from "./login.client.js?url";
     </div>
   </section>
 
-  <!-- Vite emits a final URL for this module -->
-  <script type="module" src={clientScriptUrl}></script>
+  <!-- Load the processed/bundled client script (URL is generated at build time) -->
+  <script type="module" src={clientUrl}></script>
 </Base>

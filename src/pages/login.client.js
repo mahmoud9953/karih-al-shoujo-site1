@@ -1,5 +1,5 @@
 // src/pages/login.client.js
-import { auth, googleProvider } from "/src/lib/firebase.js";
+import { auth, googleProvider } from "../lib/firebase.js"; // NOTE: relative path (no /src/)
 import {
   signInWithPopup,
   signInWithEmailAndPassword,
@@ -18,16 +18,13 @@ if (typeof window !== "undefined") {
   const password = $("#password");
   const msg = $("#msg");
 
-  const show = (t) => {
-    if (msg) msg.textContent = t || "";
-  };
+  const show = (t) => { if (msg) msg.textContent = t || ""; };
 
   googleBtn?.addEventListener("click", async () => {
     show("جاري تسجيل الدخول…");
     try {
       await signInWithPopup(auth, googleProvider);
-      show("تم تسجيل الدخول ✅");
-      window.location.assign("/"); // redirect to home
+      window.location.assign("/");
     } catch (e) {
       show(e?.message || e?.code || "حدث خطأ");
       console.error(e);
@@ -38,8 +35,7 @@ if (typeof window !== "undefined") {
     show("…");
     try {
       await signInWithEmailAndPassword(auth, email.value.trim(), password.value);
-      show("تم تسجيل الدخول ✅");
-      window.location.assign("/"); // redirect to home
+      window.location.assign("/");
     } catch (e) {
       show(e?.message || e?.code || "حدث خطأ");
       console.error(e);
@@ -50,8 +46,7 @@ if (typeof window !== "undefined") {
     show("…");
     try {
       await createUserWithEmailAndPassword(auth, email.value.trim(), password.value);
-      show("تم إنشاء الحساب ✅");
-      window.location.assign("/"); // redirect to home
+      window.location.assign("/");
     } catch (e) {
       show(e?.message || e?.code || "حدث خطأ");
       console.error(e);
