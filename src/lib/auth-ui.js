@@ -1,5 +1,5 @@
 // src/lib/auth-ui.js
-import { auth } from "/src/lib/firebase.js";
+import { auth } from "./firebase.js"; // <-- same folder, no leading slash
 import { onAuthStateChanged, signOut } from "firebase/auth";
 
 if (typeof window !== "undefined") {
@@ -50,16 +50,3 @@ if (typeof window !== "undefined") {
     if (!authMenuList) return;
     const vis = authMenuList.style.display === "block";
     authMenuList.style.display = vis ? "none" : "block";
-  });
-
-  signOutBtn?.addEventListener("click", async () => {
-    await signOut(auth);
-    setSignedOut();
-    window.location.href = "/";
-  });
-
-  document.addEventListener("click", (e) => {
-    if (!authMenu || !authMenuList) return;
-    if (!authMenu.contains(e.target)) authMenuList.style.display = "none";
-  });
-}
