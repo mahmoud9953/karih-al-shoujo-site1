@@ -141,6 +141,86 @@ const SB = {
         setSignedOut();
         location.href = "/";
       });
-    </script>
+    <script type="module">
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+  // Read once from meta tags (set by Vercel env)
+  const SB_URL = document.querySelector('meta[name="x-sb-url"]')?.content || "";
+  const SB_KEY = document.querySelector('meta[name="x-sb-key"]')?.content || "";
+
+  // Singleton client to avoid the GoTrue warning
+  if (!window.__sb) window.__sb = createClient(SB_URL, SB_KEY);
+  const supabase = window.__sb;
+
+  const authLink   = document.getElementById("authLink");
+  const authAvatar = document.getElementById("authAvatar");
+  const signOutBtn = document.getElementById("signOutBtn");
+  const adminLink  = document.getElementById("adminLink");
+
+  function setSignedOut() {
+    if (authAvatar) authAvatar.style.display = "none";
+    if (authLink) {
+      authLink.textContent = "تسجيل الدخول";
+      authLink.href = "/login";
+    }
+    if (signOutBtn) signOutBtn.style.display = "none";
+    if (adminLink) adminLink.style.display = "none";
+  }
+
+  function setSignedIn(user) {
+    const name = user.user_metadata?.name || user.email || "حسابي";
+    if (authLink) {
+      authLink.textContent = name;
+      authLink.href = "/";
+    }
+    if (signOutBtn) signOutBtn.style.display = "inline-flex";
+    if (authAvatar) {
+      authAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
+      authAvatar.style.display = "inline-block";
+    }
+  }
+
+  async function refresh() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setSignedOut(); return; }
+    setSignedIn(user);
+
+    // Default: hide admin link
+    if (adminLink) adminLink.style.display = "none";
+
+    // Try reading role; if table/policies missing, just ignore the error
+    try {
+      const { data, error } = await supabase
+        .from("roles")
+        .select("role, novel_slug")
+        .eq("email", user.email);
+
+      if (!error && Array.isArray(data)) {
+        const hasPriv = data.some(r => r.role === "admin" || r.role === "writer");
+        if (hasPriv && adminLink) adminLink.style.display = "inline-block";
+      }
+    } catch (_) {
+      // swallow any 404/500 from missing table or RLS
+    }
+  }
+
+  refresh();
+
+  supabase.auth.onAuthStateChange((_evt, session) => {
+    if (session?.user) {
+      setSignedIn(session.user);
+      refresh();
+    } else {
+      setSignedOut();
+    }
+  });
+
+  document.getElementById("signOutBtn")?.addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    setSignedOut();
+    location.href = "/";
+  });
+</script>
+
   </body>
 </html>
