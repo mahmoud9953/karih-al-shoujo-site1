@@ -1,19 +1,23 @@
 ---
 import Base from "@/layouts/Base.astro";
 
-// URL params
 const { slug = "", chapter = "" } = Astro.params;
+const wantSlug = String(slug).trim();
+const wantChapStr = String(chapter).trim();
+const wantChapNum = Number(wantChapStr);
 
-// Load all MD files under /src/content/novels (nested OK)
 const files = import.meta.glob("/src/content/novels/**/*.md", { eager: true }) as Record<string, any>;
 
-// Find the one that matches slug + chapter
 function pick() {
-  const wantSlug = String(slug);
-  const wantChap = Number(chapter);
   for (const mod of Object.values(files)) {
     const fm = (mod as any).frontmatter ?? {};
-    if (String(fm.slug) === wantSlug && Number(fm.chapter) === wantChap) {
+    const fmSlug = String(fm.slug ?? "").trim();
+    const fmChapStr = String(fm.chapter ?? "").trim();
+    const fmChapNum = Number(fmChapStr);
+
+    // match if number OR exact string match (covers "6" vs 6)
+    const chapMatch = (Number.isFinite(wantChapNum) && fmChapNum === wantChapNum) || (fmChapStr === wantChapStr);
+    if (fmSlug === wantSlug && chapMatch) {
       return { fm, Content: (mod as any).default };
     }
   }
@@ -22,27 +26,42 @@ function pick() {
 
 const found = pick();
 const notFound = !found;
-const title = found ? `${found.fm.title || `الفصل ${chapter}`} — ${found.fm.novel || found.fm.slug}` : "غير موجود";
+const title = found ? `${found.fm.title || `الفصل ${wantChapStr}`} — ${found.fm.novel || found.fm.slug}` : "غير موجود";
 ---
 
 <Base title={title} description={found?.fm.summary || ""}>
   {notFound ? (
     <section class="card" style="margin:18px 0;padding:20px;border-radius:16px;">
       <h1 style="margin-top:0">غير موجود</h1>
-      <p class="muted">لم نعثر على هذا الفصل. تأكّد من وجود الملف وأن الـ <code>slug</code> و <code>chapter</code> في الـ frontmatter صحيحان.</p>
-      <p><a href={`/novels/${slug}`}>العودة إلى كل الفصول</a></p>
+      <p class="muted">لم نعثر على هذا الفصل.</p>
+      <details style="margin-top:10px">
+        <summary>تفاصيل تصحيح</summary>
+        <ul>
+          <li>المسار يجب أن يكون داخل <code>/src/content/novels/</code>.</li>
+          <li>امتداد الملف <code>.md</code> (ليس <code>.md.txt</code>).</li>
+          <li>في الـ frontmatter:
+            <pre>slug: "{String(slug)}"
+chapter: {String(chapter)}</pre>
+          </li>
+        </ul>
+        <p>الفصول التي اكتشفها البناء:</p>
+        <pre style="white-space:pre-wrap;max-height:220px;overflow:auto">
+{JSON.stringify(
+  Object.values(files).map((m:any)=>({slug:String(m.frontmatter?.slug||""), chapter:String(m.frontmatter?.chapter||"")})),
+  null, 2)}
+        </pre>
+      </details>
+      <p><a href={`/novels/${slug}`}>العودة إلى الفصول</a></p>
     </section>
   ) : (
     <article class="card" style="margin:18px 0;padding:22px;border-radius:16px;">
       <header style="margin-bottom:14px">
-        <h1 style="margin:0 0 6px">{found!.fm.title || `الفصل ${chapter}`}</h1>
+        <h1 style="margin:0 0 6px">{found!.fm.title || `الفصل ${wantChapStr}`}</h1>
         <p class="muted" style="margin:0">
-          {found!.fm.novel || found!.fm.slug} — الفصل {chapter}
+          {found!.fm.novel || found!.fm.slug} — الفصل {wantChapStr}
         </p>
       </header>
-
       <found!.Content />
-
       <footer style="margin-top:18px">
         <a class="muted" href={`/novels/${slug}`}>◀ العودة إلى فصول {found!.fm.novel || found!.fm.slug}</a>
       </footer>
