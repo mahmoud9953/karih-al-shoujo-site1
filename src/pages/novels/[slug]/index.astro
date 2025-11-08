@@ -2,6 +2,7 @@
 import Base from "@/layouts/Base.astro";
 
 const { slug = "" } = Astro.params;
+const wantSlug = String(slug).trim();
 
 const files = import.meta.glob("/src/content/novels/**/*.md", { eager: true }) as Record<string, any>;
 
@@ -12,16 +13,35 @@ let novelTitle = "";
 let cover = "/cover3.png";
 let description = "";
 
-for (const mod of Object.values(files)) {
+// same path helper
+function deriveFromPath(path: string) {
+  const parts = path.split("/");
+  const slugFromPath = parts[4] || "";
+  const fileName     = parts[5] || "";
+  const m = fileName.match(/^(\d+)|-(\d+)\./) || fileName.match(/(\d+)(?=\.md$)/);
+  const chapFromPathN = m ? Number(m[1] ?? m[2]) : NaN;
+  return { slugFromPath: String(slugFromPath).trim(), chapFromPathN };
+}
+
+for (const [path, mod] of Object.entries(files)) {
   const fm = (mod as any).frontmatter ?? {};
-  if (String(fm.slug) !== String(slug)) continue;
-  novelTitle = fm.novel || slug;
-  cover = fm.cover || cover;
+  const { slugFromPath, chapFromPathN } = deriveFromPath(path);
+
+  const fmSlug   = String(fm.slug ?? slugFromPath).trim();
+  if (fmSlug !== wantSlug) continue;
+
+  // prefer fm values, fall back to path-derived values
+  const chapN  = Number.isFinite(Number(fm.chapter)) ? Number(fm.chapter) : chapFromPathN;
+  const title  = fm.title || (Number.isFinite(chapN) ? `الفصل ${chapN}` : `الفصل`);
+
+  if (!novelTitle) novelTitle = fm.novel || fmSlug;
+  cover       = fm.cover || cover;
   description = fm.description || description;
+
   rows.push({
-    chapter: Number(fm.chapter ?? 0),
-    title: fm.title || `الفصل ${fm.chapter ?? ""}`,
-    url: `/novels/${slug}/${fm.chapter}`,
+    chapter: chapN,
+    title,
+    url: `/novels/${wantSlug}/${String(chapN)}`,
     publishedAt: fm.publishedAt
   });
 }
@@ -35,7 +55,7 @@ const pageTitle = notFound ? "غير موجود" : `فصول ${novelTitle}`;
   {notFound ? (
     <section class="card" style="margin:18px 0;padding:20px;border-radius:16px;">
       <h1 style="margin:0 0 6px">غير موجود</h1>
-      <p class="muted">لا توجد فصول للرواية ذات المعرّف <code>{slug}</code>.</p>
+      <p class="muted">لا توجد فصول للرواية ذات المعرّف <code>{String(slug)}</code>.</p>
       <p><a href="/novels">العودة إلى كل الروايات</a></p>
     </section>
   ) : (
