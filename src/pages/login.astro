@@ -1,10 +1,7 @@
 ---
 import Base from "@/layouts/Base.astro";
-const e = import.meta.env;
-const SB = {
-  url: e.PUBLIC_SUPABASE_URL,
-  key: e.PUBLIC_SUPABASE_ANON_KEY,
-};
+
+// expose env via meta in Base.astro; we'll read them here from meta too
 ---
 
 <Base title="تسجيل الدخول">
@@ -15,7 +12,6 @@ const SB = {
     </div>
 
     <div style="display:grid;gap:14px;">
-      <!-- Google -->
       <button id="googleBtn"
         style="width:100%;display:inline-flex;align-items:center;justify-content:center;gap:10px;
                border:none;border-radius:14px;cursor:pointer;padding:12px 14px;
@@ -26,7 +22,6 @@ const SB = {
 
       <div class="muted" style="text-align:center;">أو</div>
 
-      <!-- Email / Password -->
       <label>البريد الإلكتروني</label>
       <input id="email" type="email" placeholder="name@email.com"
         style="padding:12px 14px;border-radius:14px;border:1px solid var(--stroke);
@@ -46,9 +41,17 @@ const SB = {
     </div>
   </section>
 
-  <script type="module" define:vars={{ SB }}>
+  <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-    const supabase = createClient(SB.url, SB.key);
+
+    const SB_URL = document.querySelector('meta[name="x-sb-url"]')?.content || "";
+    const SB_KEY = document.querySelector('meta[name="x-sb-key"]')?.content || "";
+
+    if (!SB_URL || !SB_KEY) {
+      console.error("Supabase env missing. Set PUBLIC_SUPABASE_URL and PUBLIC_SUPABASE_ANON_KEY in Vercel.");
+    }
+
+    const supabase = createClient(SB_URL, SB_KEY);
 
     const $ = (s)=>document.querySelector(s);
     const email = $("#email");
@@ -65,7 +68,6 @@ const SB = {
       if (user) location.replace("/");
     })();
 
-    // Email login
     emailLogin?.addEventListener("click", async ()=>{
       show("…");
       const { error } = await supabase.auth.signInWithPassword({
@@ -75,7 +77,6 @@ const SB = {
       if (error) show(error.message); else location.href = "/";
     });
 
-    // Email signup
     emailRegister?.addEventListener("click", async ()=>{
       show("…");
       const { error } = await supabase.auth.signUp({
@@ -83,20 +84,18 @@ const SB = {
         password: password.value
       });
       if (error) show(error.message);
-      else show("تم إنشاء الحساب ✅ — إذا لزم الأمر افحص بريدك للتأكيد");
+      else show("تم إنشاء الحساب ✅ — افحص بريدك إذا طُلِب التأكيد");
     });
 
-    // Google OAuth
     googleBtn?.addEventListener("click", async ()=>{
       show("جارٍ فتح Google…");
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${location.origin}/login` } // returns here then we redirect home
+        options: { redirectTo: `${location.origin}/login` }
       });
       if (error) show(error.message);
     });
 
-    // If OAuth returned here with a session, redirect home
     supabase.auth.onAuthStateChange((_evt, session)=>{
       if (session?.user) location.replace("/");
     });
