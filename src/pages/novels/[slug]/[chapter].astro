@@ -1,59 +1,51 @@
 ---
 import Base from "@/layouts/Base.astro";
-import { Markdown } from "astro/components";
 
-export const prerender = false; // server output
+// URL params
+const { slug = "", chapter = "" } = Astro.params;
 
-const modules = import.meta.glob("/src/content/novels/**/*.md", { eager: true }) as Record<string, any>;
-const { slug, chapter } = Astro.params;
+// Load all MD files under /src/content/novels (nested OK)
+const files = import.meta.glob("/src/content/novels/**/*.md", { eager: true }) as Record<string, any>;
 
-type FM = { slug?: string; chapter?: number; title?: string; cover?: string; novel?: string; description?: string };
-
-const chNum = Number(chapter ?? 0);
-
-// find the exact chapter
-let found: { frontmatter: FM; Content?: any } | null = null;
-for (const mod of Object.values(modules)) {
-  const fm = (mod.frontmatter ?? {}) as FM;
-  if (fm.slug === slug && Number(fm.chapter ?? -1) === chNum) {
-    found = { frontmatter: fm, Content: mod.default || mod.Content };
-    break;
+// Find the one that matches slug + chapter
+function pick() {
+  const wantSlug = String(slug);
+  const wantChap = Number(chapter);
+  for (const mod of Object.values(files)) {
+    const fm = (mod as any).frontmatter ?? {};
+    if (String(fm.slug) === wantSlug && Number(fm.chapter) === wantChap) {
+      return { fm, Content: (mod as any).default };
+    }
   }
+  return null;
 }
 
-const title = found?.frontmatter?.title ?? `الفصل ${chNum}`;
-const novel = found?.frontmatter?.novel ?? slug ?? "";
-const cover = found?.frontmatter?.cover ?? "/cover3.png";
-const desc  = found?.frontmatter?.description ?? "";
+const found = pick();
+const notFound = !found;
+const title = found ? `${found.fm.title || `الفصل ${chapter}`} — ${found.fm.novel || found.fm.slug}` : "غير موجود";
 ---
 
-<Base title={`${novel} — ${title}`} description={desc}>
-  {!found ? (
-    <section class="card" style="margin:22px 0; padding:18px">
-      <h2 style="margin:0 0 8px;">غير موجود</h2>
-      <p class="muted" style="margin:0">هذا الفصل غير موجود.</p>
-      <p style="margin:10px 0 0;"><a class="btn" href={`/novels/${slug}`}>رجوع إلى {novel}</a></p>
+<Base title={title} description={found?.fm.summary || ""}>
+  {notFound ? (
+    <section class="card" style="margin:18px 0;padding:20px;border-radius:16px;">
+      <h1 style="margin-top:0">غير موجود</h1>
+      <p class="muted">لم نعثر على هذا الفصل. تأكّد من وجود الملف وأن الـ <code>slug</code> و <code>chapter</code> في الـ frontmatter صحيحان.</p>
+      <p><a href={`/novels/${slug}`}>العودة إلى كل الفصول</a></p>
     </section>
   ) : (
-    <article class="card" style="margin:18px 0; padding:20px; border-radius:16px">
-      <header style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
-        <img src={cover} alt={novel} style="width:44px;height:44px;border-radius:10px;border:1px solid var(--stroke);object-fit:cover" />
-        <div>
-          <h1 style="margin:0">{title}</h1>
-          <a class="muted" href={`/novels/${slug}`} style="text-decoration:none">↩ {novel}</a>
-        </div>
+    <article class="card" style="margin:18px 0;padding:22px;border-radius:16px;">
+      <header style="margin-bottom:14px">
+        <h1 style="margin:0 0 6px">{found!.fm.title || `الفصل ${chapter}`}</h1>
+        <p class="muted" style="margin:0">
+          {found!.fm.novel || found!.fm.slug} — الفصل {chapter}
+        </p>
       </header>
 
-      <div class="content">
-        {/* md renderer (both .default and .Content are handled above) */}
-        {found.Content ? <found.Content /> : null}
-      </div>
+      <found!.Content />
+
+      <footer style="margin-top:18px">
+        <a class="muted" href={`/novels/${slug}`}>◀ العودة إلى فصول {found!.fm.novel || found!.fm.slug}</a>
+      </footer>
     </article>
   )}
-
-  <style>
-    .content :where(p, h2, h3, h4, ul, ol, blockquote){ margin: 0 0 12px }
-    .content img{ max-width:100%; border-radius:12px; border:1px solid var(--stroke) }
-    .content pre{ overflow:auto; padding:12px; border-radius:12px; border:1px solid var(--stroke); background:rgba(255,255,255,.05) }
-  </style>
 </Base>

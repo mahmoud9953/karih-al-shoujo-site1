@@ -1,67 +1,61 @@
 ---
 import Base from "@/layouts/Base.astro";
-import { Markdown } from "astro/components";
 
-export const prerender = false; // we use server output (no getStaticPaths needed)
+const { slug = "" } = Astro.params;
 
-// load all chapter files
-const modules = import.meta.glob("/src/content/novels/**/*.md", { eager: true }) as Record<string, any>;
+const files = import.meta.glob("/src/content/novels/**/*.md", { eager: true }) as Record<string, any>;
 
-const { slug } = Astro.params;
+type Row = { chapter:number; title:string; url:string; publishedAt?:string };
 
-type FM = { slug?: string; chapter?: number; title?: string; cover?: string; description?: string; novel?: string };
+const rows: Row[] = [];
+let novelTitle = "";
+let cover = "/cover3.png";
+let description = "";
 
-const chapters = Object.values(modules)
-  .map(m => m.frontmatter as FM)
-  .filter(fm => fm?.slug === slug)
-  .map(fm => ({
-    slug: fm.slug!,
+for (const mod of Object.values(files)) {
+  const fm = (mod as any).frontmatter ?? {};
+  if (String(fm.slug) !== String(slug)) continue;
+  novelTitle = fm.novel || slug;
+  cover = fm.cover || cover;
+  description = fm.description || description;
+  rows.push({
     chapter: Number(fm.chapter ?? 0),
-    title: fm.title ?? `الفصل ${fm.chapter ?? ""}`,
-    cover: fm.cover ?? "/cover3.png",
-    novel: fm.novel ?? fm.slug,
-    description: fm.description ?? ""
-  }))
-  .sort((a,b)=> a.chapter - b.chapter);
+    title: fm.title || `الفصل ${fm.chapter ?? ""}`,
+    url: `/novels/${slug}/${fm.chapter}`,
+    publishedAt: fm.publishedAt
+  });
+}
 
-const metaTitle = chapters[0]?.novel ?? (slug ?? "الرواية");
-const cover = chapters[0]?.cover ?? "/cover3.png";
-const description = chapters[0]?.description ?? "";
+rows.sort((a,b)=> a.chapter - b.chapter);
+const notFound = rows.length === 0;
+const pageTitle = notFound ? "غير موجود" : `فصول ${novelTitle}`;
 ---
 
-<Base title={`الرواية — ${metaTitle}`} description={description}>
-  {chapters.length === 0 ? (
-    <section class="card" style="margin:22px 0; padding:18px">
-      <h2 style="margin:0 0 8px;">غير موجود</h2>
-      <p class="muted" style="margin:0">لا توجد فصول لهذه الرواية.</p>
-      <p style="margin:10px 0 0;"><a class="btn" href="/novels">رجوع</a></p>
+<Base title={pageTitle} description={description}>
+  {notFound ? (
+    <section class="card" style="margin:18px 0;padding:20px;border-radius:16px;">
+      <h1 style="margin:0 0 6px">غير موجود</h1>
+      <p class="muted">لا توجد فصول للرواية ذات المعرّف <code>{slug}</code>.</p>
+      <p><a href="/novels">العودة إلى كل الروايات</a></p>
     </section>
   ) : (
-    <section style="margin:22px 0;">
-      <div style="display:flex;gap:16px;align-items:center;margin-bottom:10px">
-        <img src={cover} alt={metaTitle} style="width:56px;height:56px;border-radius:12px;border:1px solid var(--stroke);object-fit:cover" />
+    <section class="card" style="margin:18px 0;padding:20px;border-radius:16px;">
+      <div style="display:flex;gap:14px;align-items:center;margin-bottom:10px">
+        <img src={cover} alt={novelTitle} style="width:88px;height:88px;object-fit:cover;border-radius:12px;border:1px solid var(--stroke)" />
         <div>
-          <h1 style="margin:0">{metaTitle}</h1>
-          <p class="muted" style="margin:0">عدد الفصول: {chapters.length}</p>
+          <h1 style="margin:0 0 6px">{novelTitle}</h1>
+          {description && <p class="muted" style="margin:0">{description}</p>}
         </div>
       </div>
 
-      <div class="grid">
-        {chapters.map(ch => (
-          <a class="chapter" href={`/novels/${ch.slug}/${ch.chapter}`}>
-            <div class="num">الفصل {ch.chapter}</div>
-            <div class="title">{ch.title}</div>
-          </a>
+      <ol style="margin:0;padding-inline-start:18px;display:grid;gap:6px">
+        {rows.map(r => (
+          <li>
+            <a href={r.url}>الفصل {r.chapter}: {r.title}</a>
+            {r.publishedAt && <span class="muted" style="margin-inline-start:8px">— {r.publishedAt}</span>}
+          </li>
         ))}
-      </div>
+      </ol>
     </section>
   )}
-
-  <style>
-    .grid{ display:grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap:12px }
-    .chapter{ display:block; padding:12px; border-radius:12px; border:1px solid var(--stroke); background:var(--glass); text-decoration:none; color:inherit }
-    .chapter:hover{ border-color:rgba(255,255,255,.14) }
-    .num{ font-weight:800 }
-    .title{ color:var(--muted) }
-  </style>
 </Base>
