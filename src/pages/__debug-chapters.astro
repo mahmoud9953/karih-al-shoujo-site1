@@ -1,0 +1,9 @@
+---
+const files = import.meta.glob("/src/content/novels/**/*.md", { eager: true }) as Record<string, any>;
+const rows = Object.values(files).map((m:any) => {
+  const f = m.frontmatter ?? {};
+  return { slug: String(f.slug), chapter: String(f.chapter), title: f.title || "" };
+}).sort((a,b)=> (a.slug.localeCompare(b.slug) || Number(a.chapter)-Number(b.chapter)));
+---
+<h1>Debug: chapters seen by Astro</h1>
+<pre style="white-space:pre-wrap">{JSON.stringify(rows, null, 2)}</pre>
