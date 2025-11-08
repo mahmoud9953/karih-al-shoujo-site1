@@ -1,35 +1,31 @@
 ---
 const { title = "موقع الروايات", description = "" } = Astro.props;
 
-// read env on the server and expose to the browser via <meta>
-const e = import.meta.env;
-const SB = {
-  url: e.PUBLIC_SUPABASE_URL || "",
-  key: e.PUBLIC_SUPABASE_ANON_KEY || "",
-};
+// Expose Supabase env through meta so we never inline secrets
+const SB_URL  = import.meta.env.PUBLIC_SUPABASE_URL || "";
+const SB_KEY  = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || "";
 ---
-
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" data-astro-cid-5hce7sga>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
 
-    <!-- Supabase creds available on EVERY page -->
-    <meta name="x-sb-url" content={SB.url} />
-    <meta name="x-sb-key" content={SB.key} />
+    <!-- Expose Supabase creds to client safely -->
+    <meta name="x-sb-url" content={SB_URL} />
+    <meta name="x-sb-key" content={SB_KEY} />
 
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;900&family=Tajawal:wght@400;500&display=swap" rel="stylesheet" />
     <style>
-      :root{ --ink:#e7e9ee; --muted:#b3b9c7; --stroke:rgba(255,255,255,.08); --glass:rgba(255,255,255,.04); --bg:#0b0f14; --accent:#5b6cff; }
+      :root{ --ink:#e7e9ee; --muted:#b3b9c7; --stroke:rgba(255,255,255,.08); --glass:rgba(255,255,255,.04); --bg:#0b0f14; }
       html,body{height:100%}
-      body{margin:0;color:var(--ink);font-family:'Tajawal',system-ui,sans-serif;line-height:1.65;background:
+      body{margin:0;color:var(--ink);font-family:Tajawal,system-ui,sans-serif;line-height:1.65;background:
         radial-gradient(1200px 600px at 75% -10%, rgba(110,168,255,.07), transparent 60%),
         radial-gradient(1000px 500px at 10% 110%, rgba(190,120,255,.06), transparent 55%),
         var(--bg);}
       .container{ width:min(1100px,92vw); margin-inline:auto; padding:0 1rem }
-      header.nav{position:sticky; top:0; z-index:50; backdrop-filter:blur(10px); background:rgba(5,7,10,.55); border-bottom:1px solid var(--stroke)}
+      header.nav{position:sticky; top:0; z-index:50; backdrop-filter:blur(10px); background:#05070a8c; border-bottom:1px solid var(--stroke)}
       .nav-inner{display:flex; align-items:center; justify-content:space-between; height:56px; gap:12px; flex-wrap:wrap}
       .links{display:flex; gap:14px; align-items:center; flex-wrap:wrap}
       .links a{ color: var(--ink); text-decoration:none; font-weight:600 }
@@ -38,11 +34,12 @@ const SB = {
       #authArea{ display:flex; align-items:center; gap:10px; flex-wrap:wrap }
       #authAvatar{ display:none; width:28px; height:28px; border-radius:50%; border:1px solid var(--stroke); object-fit:cover }
       .btn{ padding:10px 14px; border-radius:12px; border:1px solid var(--stroke); background:transparent; color:var(--ink); cursor:pointer; font-size:.95rem }
-      @media (max-width:600px){
-        .container{ width:94%; padding:0 .75rem }
+
+      @media (max-width: 600px){
         .nav-inner{ flex-direction:column; align-items:flex-start; height:auto; padding:8px 0 }
+        .links{ flex-direction:column; align-items:flex-start; gap:8px }
         #authArea{ width:100%; justify-content:space-between }
-        .btn{ padding:8px 12px }
+        .btn{ padding:8px 12px; font-size:.95rem }
       }
     </style>
   </head>
@@ -52,7 +49,7 @@ const SB = {
         <div class="links">
           <a href="/" style="font-weight:800">موقع الروايات</a>
           <a href="/">الرئيسية</a>
-          <a href="/novels">كل الروايات</a>
+          <a href="/novels/my-first-novel">كل الفصول</a>
           <a id="adminLink" href="/admin" style="display:none">لوحة الإدارة</a>
         </div>
 
@@ -68,41 +65,35 @@ const SB = {
       <slot />
     </main>
 
-    <!-- Auth header logic (safe if Supabase env missing) -->
     <script type="module">
       import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-
       const SB_URL = document.querySelector('meta[name="x-sb-url"]')?.content || "";
       const SB_KEY = document.querySelector('meta[name="x-sb-key"]')?.content || "";
+      const supabase = (SB_URL && SB_KEY) ? createClient(SB_URL, SB_KEY) : null;
 
-      let supabase = null;
-      if (SB_URL && SB_KEY) {
-        supabase = createClient(SB_URL, SB_KEY);
-      } else {
-        // No env on this deploy => disable auth UI quietly
-        console.warn("Supabase env missing. Header auth UI disabled for this page.");
-      }
-
-      const authLink  = document.getElementById("authLink");
-      const authAvatar= document.getElementById("authAvatar");
-      const signOutBtn= document.getElementById("signOutBtn");
-      const adminLink = document.getElementById("adminLink");
+      const authLink   = document.getElementById("authLink");
+      const authAvatar = document.getElementById("authAvatar");
+      const signOutBtn = document.getElementById("signOutBtn");
+      const adminLink  = document.getElementById("adminLink");
 
       function setSignedOut() {
         if (authAvatar) authAvatar.style.display = "none";
-        if (authLink) { authLink.textContent = "تسجيل الدخول"; authLink.href = "/login"; }
-        if (signOutBtn) signOutBtn.style.display = "none";
-        if (adminLink) adminLink.style.display = "none";
+        if (adminLink)  adminLink.style.display  = "none";  // no DB check = keep hidden
+        authLink.textContent = "تسجيل الدخول";
+        authLink.href = "/login";
+        signOutBtn.style.display = "none";
       }
+
       function setSignedIn(user) {
         const name = user?.user_metadata?.name || user?.email || "حسابي";
-        if (authLink) { authLink.textContent = name; authLink.href = "/"; }
-        if (signOutBtn) signOutBtn.style.display = "inline-flex";
+        authLink.textContent = name;
+        authLink.href = "/";
+        signOutBtn.style.display = "inline-flex";
         if (authAvatar) {
-          authAvatar.src = user?.user_metadata?.avatar_url
-            || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
+          authAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
           authAvatar.style.display = "inline-block";
         }
+        // NOTE: adminLink stays hidden until we reintroduce a safe admin flag later
       }
 
       async function refresh() {
@@ -110,117 +101,18 @@ const SB = {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) { setSignedOut(); return; }
         setSignedIn(user);
-
-        // role-gated admin link (optional table 'roles' with columns: email, role)
-        try {
-          const { data: roles } = await supabase
-            .from("roles")
-            .select("role")
-            .eq("email", user.email);
-          if (roles?.some(r => r.role === "admin")) {
-            if (adminLink) adminLink.style.display = "inline-block";
-          } else {
-            if (adminLink) adminLink.style.display = "none";
-          }
-        } catch (_) {
-          if (adminLink) adminLink.style.display = "none";
-        }
       }
-
       refresh();
-      if (supabase) {
-        supabase.auth.onAuthStateChange((_e, session) => {
-          if (session?.user) { setSignedIn(session.user); refresh(); }
-          else setSignedOut();
-        });
-      }
+
+      supabase?.auth.onAuthStateChange((_e, session) => {
+        if (session?.user) setSignedIn(session.user); else setSignedOut();
+      });
 
       signOutBtn?.addEventListener("click", async () => {
-        if (!supabase) return;
-        await supabase.auth.signOut();
+        try { await supabase?.auth.signOut(); } catch {}
         setSignedOut();
         location.href = "/";
       });
-    <script type="module">
-  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-
-  // Read once from meta tags (set by Vercel env)
-  const SB_URL = document.querySelector('meta[name="x-sb-url"]')?.content || "";
-  const SB_KEY = document.querySelector('meta[name="x-sb-key"]')?.content || "";
-
-  // Singleton client to avoid the GoTrue warning
-  if (!window.__sb) window.__sb = createClient(SB_URL, SB_KEY);
-  const supabase = window.__sb;
-
-  const authLink   = document.getElementById("authLink");
-  const authAvatar = document.getElementById("authAvatar");
-  const signOutBtn = document.getElementById("signOutBtn");
-  const adminLink  = document.getElementById("adminLink");
-
-  function setSignedOut() {
-    if (authAvatar) authAvatar.style.display = "none";
-    if (authLink) {
-      authLink.textContent = "تسجيل الدخول";
-      authLink.href = "/login";
-    }
-    if (signOutBtn) signOutBtn.style.display = "none";
-    if (adminLink) adminLink.style.display = "none";
-  }
-
-  function setSignedIn(user) {
-    const name = user.user_metadata?.name || user.email || "حسابي";
-    if (authLink) {
-      authLink.textContent = name;
-      authLink.href = "/";
-    }
-    if (signOutBtn) signOutBtn.style.display = "inline-flex";
-    if (authAvatar) {
-      authAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
-      authAvatar.style.display = "inline-block";
-    }
-  }
-
-  async function refresh() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setSignedOut(); return; }
-    setSignedIn(user);
-
-    // Default: hide admin link
-    if (adminLink) adminLink.style.display = "none";
-
-    // Try reading role; if table/policies missing, just ignore the error
-    try {
-      const { data, error } = await supabase
-        .from("roles")
-        .select("role, novel_slug")
-        .eq("email", user.email);
-
-      if (!error && Array.isArray(data)) {
-        const hasPriv = data.some(r => r.role === "admin" || r.role === "writer");
-        if (hasPriv && adminLink) adminLink.style.display = "inline-block";
-      }
-    } catch (_) {
-      // swallow any 404/500 from missing table or RLS
-    }
-  }
-
-  refresh();
-
-  supabase.auth.onAuthStateChange((_evt, session) => {
-    if (session?.user) {
-      setSignedIn(session.user);
-      refresh();
-    } else {
-      setSignedOut();
-    }
-  });
-
-  document.getElementById("signOutBtn")?.addEventListener("click", async () => {
-    await supabase.auth.signOut();
-    setSignedOut();
-    location.href = "/";
-  });
-</script>
-
+    </script>
   </body>
 </html>
