@@ -1,55 +1,66 @@
 ---
 import Base from "@/layouts/Base.astro";
 
-// Load chapters & group by novel
+// Load chapters & group by novel (server-safe)
 const files = import.meta.glob("/src/content/novels/**/*.md", { eager: true }) as Record<string, any>;
 
-type FM = { novel?: string; slug?: string; chapter?: number; cover?: string; summary?: string; description?: string; };
+type FM = {
+  novel?: string;
+  slug?: string;
+  chapter?: number | string;
+  cover?: string;
+  summary?: string;
+  description?: string;
+  title?: string;
+};
 
-const bySlug = new Map<string, {
-  title: string; slug: string; cover: string; count: number; latest: number; description: string;
-}>();
+const bySlug = new Map<
+  string,
+  { title: string; slug: string; cover: string; count: number; latest: number; description: string }
+>();
 
-const allChapters: Array<{slug:string; chapter:number; title:string}> = [];
+const allChapters: Array<{ slug: string; chapter: number; title: string }> = [];
 
 for (const mod of Object.values(files)) {
-  const fm: FM = mod.frontmatter ?? {};
-  if (!fm.slug) continue;
+  const fm: FM = (mod as any).frontmatter ?? {};
+  if (!fm?.slug) continue;
 
-  const entry = bySlug.get(fm.slug) ?? {
-    title: fm.novel ?? fm.slug,
-    slug: fm.slug,
-    cover: fm.cover ?? "/cover3.png",
-    count: 0,
-    latest: 0,
-    description: fm.description ?? "",
-  };
+  const entry =
+    bySlug.get(fm.slug) ??
+    {
+      title: fm.novel ?? fm.slug,
+      slug: fm.slug,
+      cover: fm.cover ?? "/cover3.png",
+      count: 0,
+      latest: 0,
+      description: fm.description ?? "",
+    };
+
   entry.count += 1;
-  entry.latest = Math.max(entry.latest, Number(fm.chapter ?? 0));
+  const cnum = Number(fm.chapter ?? 0);
+  if (Number.isFinite(cnum)) entry.latest = Math.max(entry.latest, cnum);
   bySlug.set(fm.slug, entry);
 
-  // list for "latest"
-  const t = fm.title ?? `الفصل ${fm.chapter ?? ""}`;
-  const cnum = Number(fm.chapter ?? 0);
+  const t = fm.title ?? `الفصل ${Number.isFinite(cnum) ? cnum : ""}`;
   if (Number.isFinite(cnum)) allChapters.push({ slug: fm.slug, chapter: cnum, title: t });
 }
 
-const novels = Array.from(bySlug.values()).sort((a,b)=> a.slug.localeCompare(b.slug));
-allChapters.sort((a,b)=> b.chapter - a.chapter);
+const novels = Array.from(bySlug.values()).sort((a, b) => a.slug.localeCompare(b.slug));
+allChapters.sort((a, b) => b.chapter - a.chapter);
 const latest = allChapters.slice(0, 6);
 
-// For hero: use first novel (if exists)
+// Hero data (with safe fallbacks)
 const hero = novels[0];
 const novelTitle = hero?.title ?? "كاره الشوجو";
 const novelSlug = hero?.slug ?? "karih-al-shoujo";
 const heroCover = hero?.cover ?? "/cover3.png";
-const heroDesc  = hero?.description ?? "كل شيء ضبابي… حتى الحقيقة. ادخل عالم «كاره الشوجو»، حيث تتقاطع القوى والقدر.";
+const heroDesc =
+  hero?.description ?? "كل شيء ضبابي… حتى الحقيقة. ادخل عالم «كاره الشوجو»، حيث تتقاطع القوى والقدر.";
 ---
 
 <Base title="الرئيسية — موقع الروايات" description={novelTitle}>
-
   <!-- === Mystery Hero === -->
-  <section class="hero-mystery" dir="rtl">
+  <section class="hero-mystery" dir="rtl" aria-label="قسم المقدمة">
     <div class="veil"></div>
     <div class="hero-content">
       <h1>غموضٌ يبتلعُ اليقين</h1>
@@ -61,7 +72,7 @@ const heroDesc  = hero?.description ?? "كل شيء ضبابي… حتى الح�
     </div>
   </section>
 
-  <!-- LATEST (compact: cover + one sentence) -->
+  <!-- LATEST -->
   {latest.length > 0 && (
     <section class="card" style="margin-top:18px; padding:12px;">
       <div class="latest-wrap">
@@ -74,16 +85,14 @@ const heroDesc  = hero?.description ?? "كل شيء ضبابي… حتى الح�
         <div class="latest-text">
           <h2 style="margin:0 0 8px;">آخر الفصول</h2>
           <p class="muted" style="margin:0;">
-            آخر الفصول:&nbsp;
-            {
-              latest.slice(0, 4).map((it, i) => (
-                <>
-                  <a href={`/novels/${it.slug}/${it.chapter}`}>الفصل {it.chapter}</a>
-                  {i < Math.min(latest.length, 4) - 1 && "، "}
-                </>
-              ))
-            }
-            &nbsp;— <a href="/novels">عرض الكل</a>
+            <span>آخر الفصول:&nbsp;</span>
+            {latest.slice(0, 4).map((it, i) => (
+              <span>
+                <a href={`/novels/${it.slug}/${it.chapter}`}>الفصل {it.chapter}</a
+                >{i < Math.min(latest.length, 4) - 1 ? "، " : ""}
+              </span>
+            ))}
+            <span>&nbsp;— </span><a href="/novels">عرض الكل</a>
           </p>
         </div>
       </div>
@@ -109,10 +118,10 @@ const heroDesc  = hero?.description ?? "كل شيء ضبابي… حتى الح�
   )}
 
   <!-- NOVELS GRID -->
-  <section style="margin-top:18px">
+  <section style="margin-top:18px" aria-label="قائمة الروايات">
     <h2 style="margin:0 0 10px;">الروايات</h2>
     <div class="grid">
-      {novels.map(n => (
+      {novels.map((n) => (
         <a class="novel" href={`/novels/${n.slug}`}>
           <img src={n.cover} alt={n.title} loading="lazy" />
           <div class="meta">
@@ -131,7 +140,6 @@ const heroDesc  = hero?.description ?? "كل شيء ضبابي… حتى الح�
       border-radius: 18px;
       overflow: hidden;
       min-height: clamp(220px, 38vh, 420px);
-      /* put your image at /public/img/mystery-hero.jpg (keeps working with gradient if missing) */
       background:
         radial-gradient(1200px 420px at 70% -10%, rgba(80,92,130,.25), transparent 60%),
         url('/img/mystery-hero.jpg') center/cover no-repeat,
