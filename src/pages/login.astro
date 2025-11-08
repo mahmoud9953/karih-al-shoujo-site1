@@ -1,58 +1,108 @@
-<script type="module">
-  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+---
+import Base from "@/layouts/Base.astro";
+const title = "تسجيل الدخول";
+---
 
-  // Read from meta tags filled by Base.astro
-  const SB_URL = document.querySelector('meta[name="x-sb-url"]')?.content || "";
-  const SB_KEY = document.querySelector('meta[name="x-sb-key"]')?.content || "";
+<Base title={title} description="سجّل دخولك بالبريد أو Google.">
+  <section class="card" style="max-width:620px;margin:36px auto;padding:28px;border-radius:20px;">
+    <div style="text-align:center;margin-bottom:18px;">
+      <h1 style="margin:0 0 6px;font-size:clamp(22px,3vw,32px);font-weight:900;">تسجيل الدخول</h1>
+      <p class="muted" style="margin:0;">سجّل دخولك بالبريد أو Google.</p>
+    </div>
 
-  // Create a SINGLE client and reuse it
-  const supabase =
-    window.__sb ??= createClient(SB_URL, SB_KEY, {
-      auth: { persistSession: true, storageKey: "karih-auth" }
+    <div style="display:grid;gap:14px;">
+      <button id="googleBtn" style="width:100%;display:inline-flex;align-items:center;justify-content:center;gap:10px;
+               border:none;border-radius:14px;cursor:pointer;padding:12px 14px;
+               background:linear-gradient(135deg,#6ea8ff 0%,#a475ff 100%);
+               color:#001028;font-weight:800;box-shadow:0 6px 20px rgba(110,168,255,.25);">
+        المتابعة مع Google
+      </button>
+
+      <div class="muted" style="text-align:center;">أو</div>
+
+      <label>البريد الإلكتروني</label>
+      <input id="email" type="email" placeholder="name@email.com" style="padding:12px 14px;border-radius:14px;border:1px solid var(--stroke);
+               background:rgba(255,255,255,.06);color:var(--ink);" />
+
+      <label>كلمة المرور</label>
+      <input id="password" type="password" placeholder="••••••••" style="padding:12px 14px;border-radius:14px;border:1px solid var(--stroke);
+               background:rgba(255,255,255,.06);color:var(--ink);" />
+
+      <div style="display:flex;gap:10px;justify-content:space-between;">
+        <button id="emailLogin" class="btn" style="flex:1;">تسجيل الدخول</button>
+        <button id="emailRegister" class="btn" style="flex:1;">إنشاء حساب</button>
+      </div>
+
+      <p id="msg" class="muted" style="min-height:1.2em;text-align:center;margin:6px 0 0;"></p>
+    </div>
+  </section>
+
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+    const SB_URL = document.querySelector('meta[name="x-sb-url"]')?.content || "";
+    const SB_KEY = document.querySelector('meta[name="x-sb-key"]')?.content || "";
+
+    // Never crash if env missing
+    let supabase = null;
+    if (SB_URL && SB_KEY) {
+      supabase = createClient(SB_URL, SB_KEY);
+    } else {
+      console.warn("Supabase env missing. Login page will show UI but won’t work.");
+    }
+
+    const $ = (s)=>document.querySelector(s);
+    const email = $("#email");
+    const password = $("#password");
+    const emailLogin = $("#emailLogin");
+    const emailRegister = $("#emailRegister");
+    const googleBtn = $("#googleBtn");
+    const msg = $("#msg");
+    const show = (t)=>{ if (msg) msg.textContent = t || ""; };
+
+    // If already signed in, go home
+    (async ()=>{
+      if (!supabase) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) location.replace("/");
+    })();
+
+    emailLogin?.addEventListener("click", async ()=>{
+      if (!supabase) return show("إعداد المصادقة غير مفعّل.");
+      show("…");
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.value.trim(),
+        password: password.value
+      });
+      if (error) show(error.message); else location.href = "/";
     });
 
-  const $ = (s)=>document.querySelector(s);
-  const email = $("#email");
-  const password = $("#password");
-  const emailLogin = $("#emailLogin");
-  const emailRegister = $("#emailRegister");
-  const googleBtn = $("#googleBtn");
-  const msg = $("#msg");
-  const show = (t)=>{ if (msg) msg.textContent = t || ""; };
-
-  // If already signed in, go home
-  (async ()=>{
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) location.replace("/");
-  })();
-
-  emailLogin?.addEventListener("click", async ()=>{
-    show("…");
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.value.trim(),
-      password: password.value
+    emailRegister?.addEventListener("click", async ()=>{
+      if (!supabase) return show("إعداد المصادقة غير مفعّل.");
+      show("…");
+      const { error } = await supabase.auth.signUp({
+        email: email.value.trim(),
+        password: password.value
+      });
+      if (error) show(error.message);
+      else show("تم إنشاء الحساب ✅ — افحص بريدك إذا طُلِب التأكيد");
     });
-    if (error) show(error.message); else location.href = "/";
-  });
 
-  emailRegister?.addEventListener("click", async ()=>{
-    show("…");
-    const { error } = await supabase.auth.signUp({
-      email: email.value.trim(),
-      password: password.value
+    googleBtn?.addEventListener("click", async ()=>{
+      if (!supabase) return show("إعداد المصادقة غير مفعّل.");
+      show("جارٍ فتح Google…");
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${location.origin}/login` }
+      });
+      if (error) show(error.message);
     });
-    if (error) show(error.message);
-    else show("تم إنشاء الحساب ✅ — افحص بريدك إذا طُلِب التأكيد");
-  });
 
-  // IMPORTANT: no redirectTo here; Supabase uses your Site URL
-  googleBtn?.addEventListener("click", async ()=>{
-    show("جارٍ فتح Google…");
-    const { error } = await supabase.auth.signInWithOAuth({ provider: "google" });
-    if (error) show(error.message);
-  });
-
-  supabase.auth.onAuthStateChange((_evt, session)=>{
-    if (session?.user) location.replace("/");
-  });
-</script>
+    // Return to home after OAuth
+    if (supabase) {
+      supabase.auth.onAuthStateChange((_evt, session)=>{
+        if (session?.user) location.replace("/");
+      });
+    }
+  </script>
+</Base>

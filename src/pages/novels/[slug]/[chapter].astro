@@ -1,129 +1,59 @@
 ---
-import Base from "../../../layouts/Base.astro";
+import Base from "@/layouts/Base.astro";
+import { Markdown } from "astro/components";
 
-// 1) Tell Astro which chapter pages to generate (all slugs/chapters)
-export async function getStaticPaths() {
-  const mods = import.meta.glob("/src/content/novels/**/*.md", { eager: true });
-  const paths = [];
-  for (const mod of Object.values(mods) as any[]) {
-    const fm = mod.frontmatter ?? {};
-    if (fm.slug && fm.chapter != null) {
-      paths.push({ params: { slug: String(fm.slug), chapter: String(fm.chapter) } });
-    }
-  }
-  return paths;
-}
+export const prerender = false; // server output
 
-// 2) Build-time data for the current page
+const modules = import.meta.glob("/src/content/novels/**/*.md", { eager: true }) as Record<string, any>;
 const { slug, chapter } = Astro.params;
 
-// Load all chapters (statically) and prepare list for navigation
-type FM = {
-  title?: string;
-  novel?: string;
-  slug?: string;
-  chapter?: number | string;
-  summary?: string;
-};
-type Entry = { frontmatter: FM; default: any };
+type FM = { slug?: string; chapter?: number; title?: string; cover?: string; novel?: string; description?: string };
 
-const modules = import.meta.glob("/src/content/novels/**/*.md", { eager: true });
-const allEntries: Entry[] = [];
+const chNum = Number(chapter ?? 0);
 
-for (const mod of Object.values(modules) as any[]) {
-  const fm: FM = mod.frontmatter ?? {};
-  const Comp = mod.default;
-  if (fm && Comp) allEntries.push({ frontmatter: fm, default: Comp });
+// find the exact chapter
+let found: { frontmatter: FM; Content?: any } | null = null;
+for (const mod of Object.values(modules)) {
+  const fm = (mod.frontmatter ?? {}) as FM;
+  if (fm.slug === slug && Number(fm.chapter ?? -1) === chNum) {
+    found = { frontmatter: fm, Content: mod.default || mod.Content };
+    break;
+  }
 }
 
-// Filter to current novel
-const list = allEntries
-  .filter(e => String(e.frontmatter.slug) === String(slug))
-  .map(e => ({
-    num: e.frontmatter.chapter,
-    title: e.frontmatter.title ?? "",
-    comp: e.default,
-    url: `/novels/${slug}/${e.frontmatter.chapter}`,
-  }));
-
-// Sort chapters robustly
-const toNum = (v: any) => (isNaN(parseFloat(String(v))) ? null : parseFloat(String(v)));
-list.sort((a, b) => {
-  const na = toNum(a.num);
-  const nb = toNum(b.num);
-  if (na != null && nb != null) return na - nb;
-  return String(a.num).localeCompare(String(b.num), "ar");
-});
-
-// Find current chapter
-const idx = list.findIndex(c => String(c.num) === String(chapter));
-if (idx === -1) {
-  throw new Error(`لم يتم العثور على الفصل ${chapter} في الرواية ${slug}`);
-}
-
-const Current = list[idx].comp;
-const currentTitle = list[idx].title || `الفصل ${list[idx].num}`;
-
-// Prev/Next
-const prevUrl = idx > 0 ? list[idx - 1].url : null;
-const nextUrl = idx < list.length - 1 ? list[idx + 1].url : null;
-
-// Selector list
-const chapters = list.map(c => ({
-  number: c.num,
-  title: c.title || `الفصل ${c.num}`,
-  url: c.url,
-}));
-const current = list[idx].num;
-
-const pageTitle = `${currentTitle} — ${slug}`;
+const title = found?.frontmatter?.title ?? `الفصل ${chNum}`;
+const novel = found?.frontmatter?.novel ?? slug ?? "";
+const cover = found?.frontmatter?.cover ?? "/cover3.png";
+const desc  = found?.frontmatter?.description ?? "";
 ---
 
-<Base title={pageTitle}>
-  <article class="container" dir="rtl" style="padding:24px 0 14px;">
-    <h1 style="margin:.2rem 0 1rem;">{currentTitle}</h1>
+<Base title={`${novel} — ${title}`} description={desc}>
+  {!found ? (
+    <section class="card" style="margin:22px 0; padding:18px">
+      <h2 style="margin:0 0 8px;">غير موجود</h2>
+      <p class="muted" style="margin:0">هذا الفصل غير موجود.</p>
+      <p style="margin:10px 0 0;"><a class="btn" href={`/novels/${slug}`}>رجوع إلى {novel}</a></p>
+    </section>
+  ) : (
+    <article class="card" style="margin:18px 0; padding:20px; border-radius:16px">
+      <header style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+        <img src={cover} alt={novel} style="width:44px;height:44px;border-radius:10px;border:1px solid var(--stroke);object-fit:cover" />
+        <div>
+          <h1 style="margin:0">{title}</h1>
+          <a class="muted" href={`/novels/${slug}`} style="text-decoration:none">↩ {novel}</a>
+        </div>
+      </header>
 
-    <!-- Top controls -->
-    <div class="glass" style="margin:16px 0; padding:10px; display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;">
-      <a class="btn btn-ghost" href={prevUrl ?? "#"} aria-disabled={!prevUrl} style={prevUrl ? "" : "opacity:.5; pointer-events:none;"}>السابق</a>
-
-      <div style="display:flex; gap:8px; align-items:center;">
-        <label class="muted small">اختيار فصل</label>
-        <select onchange={`location.href=this.value`} style="background:#0e1117; color:var(--text); border:1px solid #1b2330; border-radius:10px; padding:8px;">
-          {chapters.map(c => (
-            <option value={c.url} selected={String(c.number)===String(current)}>{c.title}</option>
-          ))}
-        </select>
+      <div class="content">
+        {/* md renderer (both .default and .Content are handled above) */}
+        {found.Content ? <found.Content /> : null}
       </div>
+    </article>
+  )}
 
-      <a class="btn" href={nextUrl ?? "#"} aria-disabled={!nextUrl} style={nextUrl ? "" : "opacity:.5; pointer-events:none;"}>التالي</a>
-    </div>
-
-    <!-- Chapter content -->
-    <div class="chapter-body">
-      <Current />
-    </div>
-
-    <!-- Bottom controls -->
-    <div class="glass" style="margin:16px 0; padding:10px; display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;">
-      <a class="btn btn-ghost" href={prevUrl ?? "#"} aria-disabled={!prevUrl} style={prevUrl ? "" : "opacity:.5; pointer-events:none;"}>السابق</a>
-
-      <div style="display:flex; gap:8px; align-items:center;">
-        <label class="muted small">اختيار فصل</label>
-        <select onchange={`location.href=this.value`} style="background:#0e1117; color:var(--text); border:1px solid #1b2330; border-radius:10px; padding:8px;">
-          {chapters.map(c => (
-            <option value={c.url} selected={String(c.number)===String(current)}>{c.title}</option>
-          ))}
-        </select>
-      </div>
-
-      <a class="btn" href={nextUrl ?? "#"} aria-disabled={!nextUrl} style={nextUrl ? "" : "opacity:.5; pointer-events:none;"}>التالي</a>
-    </div>
-  </article>
+  <style>
+    .content :where(p, h2, h3, h4, ul, ol, blockquote){ margin: 0 0 12px }
+    .content img{ max-width:100%; border-radius:12px; border:1px solid var(--stroke) }
+    .content pre{ overflow:auto; padding:12px; border-radius:12px; border:1px solid var(--stroke); background:rgba(255,255,255,.05) }
+  </style>
 </Base>
-
-<style>
-.chapter-body :where(p, h2, h3, ul, ol, blockquote){
-  line-height: 1.9;
-}
-</style>

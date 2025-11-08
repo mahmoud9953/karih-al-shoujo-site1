@@ -1,100 +1,67 @@
 ---
 import Base from "@/layouts/Base.astro";
+import { Markdown } from "astro/components";
 
-/** REQUIRED for static build of dynamic [slug] route */
-export function getStaticPaths() {
-  // 1) Load all chapters (eager = at build time)
-  const mods = import.meta.glob("/src/content/novels/*/*.md", { eager: true });
+export const prerender = false; // we use server output (no getStaticPaths needed)
 
-  // 2) Build a registry per novel slug
-  const reg = new Map(); // Map<string, any[]>
-  for (const [path, mod] of Object.entries(mods)) {
-    const fm = (mod as any).frontmatter || {};
+// load all chapter files
+const modules = import.meta.glob("/src/content/novels/**/*.md", { eager: true }) as Record<string, any>;
 
-    // derive slug from folder name
-    const slugMatch = path.match(/\/src\/content\/novels\/([^/]+)\//);
-    const slug = slugMatch ? slugMatch[1] : "unknown";
+const { slug } = Astro.params;
 
-    // derive chapter number if not in frontmatter
-    const fileName = path.match(/\/([^/]+)\.md$/)?.[1] ?? "";
-    const parsedNum = Number(fileName.replace(/[^0-9.]/g, ""));
-    const chapter =
-      Number.isFinite(fm.chapter) ? fm.chapter :
-      (Number.isFinite(parsedNum) ? parsedNum : 0);
+type FM = { slug?: string; chapter?: number; title?: string; cover?: string; description?: string; novel?: string };
 
-    const item = {
-      ...fm,
-      slug,
-      chapter,
-      novel: fm.novel ?? slug,
-      title: fm.title ?? `الفصل ${chapter}`,
-    };
+const chapters = Object.values(modules)
+  .map(m => m.frontmatter as FM)
+  .filter(fm => fm?.slug === slug)
+  .map(fm => ({
+    slug: fm.slug!,
+    chapter: Number(fm.chapter ?? 0),
+    title: fm.title ?? `الفصل ${fm.chapter ?? ""}`,
+    cover: fm.cover ?? "/cover3.png",
+    novel: fm.novel ?? fm.slug,
+    description: fm.description ?? ""
+  }))
+  .sort((a,b)=> a.chapter - b.chapter);
 
-    const arr = reg.get(slug) ?? [];
-    arr.push(item);
-    reg.set(slug, arr);
-  }
-
-  // 3) Sort and return static paths
-  const paths = [];
-  for (const [slug, chapters] of reg.entries()) {
-    chapters.sort((a, b) => (a.chapter ?? 0) - (b.chapter ?? 0));
-    const meta = chapters[0] ?? {};
-    paths.push({
-      params: { slug },
-      props: {
-        slug,
-        chapters,
-        title: meta.novel ?? slug,
-        cover: meta.cover ?? "/cover3.png",
-        description: meta.description ?? "",
-      },
-    });
-  }
-  return paths;
-}
-
-// Props from getStaticPaths
-const {
-  slug,
-  chapters = [],
-  title = "رواية",
-  cover = "/cover3.png",
-  description = "",
-} = Astro.props;
+const metaTitle = chapters[0]?.novel ?? (slug ?? "الرواية");
+const cover = chapters[0]?.cover ?? "/cover3.png";
+const description = chapters[0]?.description ?? "";
 ---
 
-<Base title={`${title} — الفصول`} description={description}>
-  <nav style="display:flex; gap:.75rem; align-items:center; margin-bottom:1rem;">
-    <a href="/" class="muted">الرئيسية</a>
-    <span class="muted">/</span>
-    <a href="/novels" class="muted">كل الروايات</a>
-    <span class="muted">/</span>
-    <strong>{title}</strong>
-  </nav>
-
-  <section class="card" style="padding:16px;">
-    <div style="display:flex; gap:16px; align-items:center;">
-      <img src={cover} alt={`غلاف ${title}`} width="96" height="96" style="border-radius:12px; object-fit:cover;" />
-      <div>
-        <h1 style="margin:.25rem 0 0">{title}</h1>
-        {description && <p class="muted" style="margin:.25rem 0 0; max-width:60ch;">{description}</p>}
+<Base title={`الرواية — ${metaTitle}`} description={description}>
+  {chapters.length === 0 ? (
+    <section class="card" style="margin:22px 0; padding:18px">
+      <h2 style="margin:0 0 8px;">غير موجود</h2>
+      <p class="muted" style="margin:0">لا توجد فصول لهذه الرواية.</p>
+      <p style="margin:10px 0 0;"><a class="btn" href="/novels">رجوع</a></p>
+    </section>
+  ) : (
+    <section style="margin:22px 0;">
+      <div style="display:flex;gap:16px;align-items:center;margin-bottom:10px">
+        <img src={cover} alt={metaTitle} style="width:56px;height:56px;border-radius:12px;border:1px solid var(--stroke);object-fit:cover" />
+        <div>
+          <h1 style="margin:0">{metaTitle}</h1>
+          <p class="muted" style="margin:0">عدد الفصول: {chapters.length}</p>
+        </div>
       </div>
-    </div>
 
-    <hr style="margin:16px 0; opacity:.15;" />
-
-    {chapters.length === 0 ? (
-      <p class="muted">لا توجد فصول بعد.</p>
-    ) : (
-      <ol style="padding-inline-start:1.25rem; text-align:right;">
-        {chapters.map((c: any) => (
-          <li style="margin:.4rem 0;">
-            <a href={`/novels/${slug}/${c.chapter}`}>الفصل {c.chapter}: {c.title}</a>
-            {c.summary && <span class="muted"> — {c.summary}</span>}
-          </li>
+      <div class="grid">
+        {chapters.map(ch => (
+          <a class="chapter" href={`/novels/${ch.slug}/${ch.chapter}`}>
+            <div class="num">الفصل {ch.chapter}</div>
+            <div class="title">{ch.title}</div>
+          </a>
         ))}
-      </ol>
-    )}
-  </section>
+      </div>
+    </section>
+  )}
+
+  <style>
+    .grid{ display:grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap:12px }
+    .chapter{ display:block; padding:12px; border-radius:12px; border:1px solid var(--stroke); background:var(--glass); text-decoration:none; color:inherit }
+    .chapter:hover{ border-color:rgba(255,255,255,.14) }
+    .num{ font-weight:800 }
+    .title{ color:var(--muted) }
+  </style>
 </Base>
