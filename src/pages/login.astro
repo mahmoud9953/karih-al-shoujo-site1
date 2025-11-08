@@ -1,9 +1,8 @@
 ---
 import Base from "@/layouts/Base.astro";
-const title = "تسجيل الدخول";
 ---
 
-<Base title={title} description="سجّل دخولك بالبريد أو Google.">
+<Base title="تسجيل الدخول" description="سجّل دخولك بالبريد أو Google.">
   <section class="card" style="max-width:620px;margin:36px auto;padding:28px;border-radius:20px;">
     <div style="text-align:center;margin-bottom:18px;">
       <h1 style="margin:0 0 6px;font-size:clamp(22px,3vw,32px);font-weight:900;">تسجيل الدخول</h1>
@@ -12,21 +11,23 @@ const title = "تسجيل الدخول";
 
     <div style="display:grid;gap:14px;">
       <button id="googleBtn" style="width:100%;display:inline-flex;align-items:center;justify-content:center;gap:10px;
-               border:none;border-radius:14px;cursor:pointer;padding:12px 14px;
-               background:linear-gradient(135deg,#6ea8ff 0%,#a475ff 100%);
-               color:#001028;font-weight:800;box-shadow:0 6px 20px rgba(110,168,255,.25);">
+                 border:none;border-radius:14px;cursor:pointer;padding:12px 14px;
+                 background:linear-gradient(135deg,#6ea8ff 0%,#a475ff 100%);
+                 color:#001028;font-weight:800;box-shadow:0 6px 20px rgba(110,168,255,.25);">
         المتابعة مع Google
       </button>
 
       <div class="muted" style="text-align:center;">أو</div>
 
       <label>البريد الإلكتروني</label>
-      <input id="email" type="email" placeholder="name@email.com" style="padding:12px 14px;border-radius:14px;border:1px solid var(--stroke);
-               background:rgba(255,255,255,.06);color:var(--ink);" />
+      <input id="email" type="email" placeholder="name@email.com"
+             style="padding:12px 14px;border-radius:14px;border:1px solid var(--stroke);
+             background:rgba(255,255,255,.06);color:var(--ink);" />
 
       <label>كلمة المرور</label>
-      <input id="password" type="password" placeholder="••••••••" style="padding:12px 14px;border-radius:14px;border:1px solid var(--stroke);
-               background:rgba(255,255,255,.06);color:var(--ink);" />
+      <input id="password" type="password" placeholder="••••••••"
+             style="padding:12px 14px;border-radius:14px;border:1px solid var(--stroke);
+             background:rgba(255,255,255,.06);color:var(--ink);" />
 
       <div style="display:flex;gap:10px;justify-content:space-between;">
         <button id="emailLogin" class="btn" style="flex:1;">تسجيل الدخول</button>
@@ -38,18 +39,7 @@ const title = "تسجيل الدخول";
   </section>
 
   <script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-
-    const SB_URL = document.querySelector('meta[name="x-sb-url"]')?.content || "";
-    const SB_KEY = document.querySelector('meta[name="x-sb-key"]')?.content || "";
-
-    // Never crash if env missing
-    let supabase = null;
-    if (SB_URL && SB_KEY) {
-      supabase = createClient(SB_URL, SB_KEY);
-    } else {
-      console.warn("Supabase env missing. Login page will show UI but won’t work.");
-    }
+    const supabase = (window.getSupabase && window.getSupabase()) || window.__supabase;
 
     const $ = (s)=>document.querySelector(s);
     const email = $("#email");
@@ -62,13 +52,11 @@ const title = "تسجيل الدخول";
 
     // If already signed in, go home
     (async ()=>{
-      if (!supabase) return;
       const { data: { user } } = await supabase.auth.getUser();
       if (user) location.replace("/");
     })();
 
     emailLogin?.addEventListener("click", async ()=>{
-      if (!supabase) return show("إعداد المصادقة غير مفعّل.");
       show("…");
       const { error } = await supabase.auth.signInWithPassword({
         email: email.value.trim(),
@@ -78,7 +66,6 @@ const title = "تسجيل الدخول";
     });
 
     emailRegister?.addEventListener("click", async ()=>{
-      if (!supabase) return show("إعداد المصادقة غير مفعّل.");
       show("…");
       const { error } = await supabase.auth.signUp({
         email: email.value.trim(),
@@ -89,7 +76,6 @@ const title = "تسجيل الدخول";
     });
 
     googleBtn?.addEventListener("click", async ()=>{
-      if (!supabase) return show("إعداد المصادقة غير مفعّل.");
       show("جارٍ فتح Google…");
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -98,11 +84,8 @@ const title = "تسجيل الدخول";
       if (error) show(error.message);
     });
 
-    // Return to home after OAuth
-    if (supabase) {
-      supabase.auth.onAuthStateChange((_evt, session)=>{
-        if (session?.user) location.replace("/");
-      });
-    }
+    supabase.auth.onAuthStateChange((_evt, session)=>{
+      if (session?.user) location.replace("/");
+    });
   </script>
 </Base>
