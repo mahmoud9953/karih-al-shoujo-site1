@@ -4,9 +4,9 @@ import Base from "@/layouts/Base.astro";
 const { slug = "", chapter = "" } = Astro.params;
 
 // normalize URL params
-const wantSlug   = String(slug).trim();
-const wantChapS  = String(chapter).trim(); // This will be "001" from the URL
-const wantChapN  = Number(wantChapS);
+const wantSlug = String(slug).trim();
+const wantChapS = String(chapter).trim(); // This will be "001" from the URL
+const wantChapN = Number(wantChapS);
 
 // grab all markdown chapters at build/runtime
 const files = import.meta.glob("/src/content/novels/**/*.md", { eager: true }) as Record<string, any>;
@@ -16,7 +16,7 @@ function deriveFromPath(path: string) {
   // /src/content/novels/<slug>/<something-like-006-foo>.md
   const parts = path.split("/");
   const slugFromPath = parts[4] || ""; // novels/<slug>/...
-  const fileName     = parts[5] || ""; // 006-foo.md
+  const fileName = parts[5] || ""; // 006-foo.md
 
   // pull leading number (e.g. 006 -> 6) or last number in name
   const m = fileName.match(/^(\d+)|-(\d+)\./) || fileName.match(/(\d+)(?=\.md$)/);
@@ -44,9 +44,9 @@ function pick(): Found | null {
     // This will now correctly get chapFromPathS as "001", "002", etc.
     const { slugFromPath, chapFromPathN, chapFromPathS } = deriveFromPath(path);
 
-    const fmSlugS   = String(fm.slug ?? "").trim() || slugFromPath;
-    const fmChapS   = String(fm.chapter ?? "").trim() || chapFromPathS;
-    const fmChapN   = Number(fm.chapter ?? chapFromPathN);
+    const fmSlugS = String(fm.slug ?? "").trim() || slugFromPath;
+    const fmChapS = String(fm.chapter ?? "").trim() || chapFromPathS;
+    const fmChapN = Number(fm.chapter ?? chapFromPathN);
 
     // compare both as numbers (when numeric) OR as exact strings
     const chapMatch =
@@ -91,7 +91,7 @@ chapter: {String(chapter)}</pre>
 {JSON.stringify(
   Object.entries(files).map(([p,m]: any) => {
     const fm = m.frontmatter ?? {};
-    const d  = deriveFromPath(p);
+    const d = deriveFromPath(p);
     return {
       path: p.replace(/^.*\/src\/content\/novels\//, "…/"),
       slug: fm.slug || d.slugFromPath,
