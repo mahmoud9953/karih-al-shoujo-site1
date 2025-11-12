@@ -6,7 +6,6 @@ const wantSlug = String(slug).trim();
 
 const files = import.meta.glob("/src/content/novels/**/*.md", { eager: true }) as Record<string, any>;
 
-// UPDATED ROW TYPE
 type Row = { chapterN:number; chapterS:string; title:string; url:string; publishedAt?:string };
 
 const rows: Row[] = [];
@@ -14,30 +13,35 @@ let novelTitle = "";
 let cover = "/cover3.png";
 let description = "";
 
-// UPDATED HELPER FUNCTION
 function deriveFromPath(path: string) {
   const parts = path.split("/");
   const slugFromPath = parts[4] || "";
   const fileName = parts[5] || "";
-  const m = fileName.match(/^(\d+)|-(\d+)\./) || fileName.match(/(\d+)(?=\.md$)/);
-  const chapFromPathN = m ? Number(m[1] ?? m[2]) : NaN;
-  // This new line saves the original string (like "001")
-  const chapFromPathS = m ? String(m[1] ?? m[2]) : String(chapFromPathN);
-  // Return both the number and the string
+  
+  // This regex will match the "001", "002" at the start of your filenames
+  const m = fileName.match(/^(\d+)/); 
+  
+  const chapFromPathN = m ? Number(m[1]) : NaN;
+  const chapFromPathS = m ? String(m[1]) : String(chapFromPathN);
+  
   return { slugFromPath: String(slugFromPath).trim(), chapFromPathN, chapFromPathS };
 }
 
 for (const [path, mod] of Object.entries(files)) {
   const fm = (mod as any).frontmatter ?? {};
-  // Get all parts from the helper
   const { slugFromPath, chapFromPathN, chapFromPathS } = deriveFromPath(path);
 
   const fmSlug = String(fm.slug ?? slugFromPath).trim();
   if (fmSlug !== wantSlug) continue;
 
-  // Use frontmatter values if they exist, otherwise use our derived values
   const chapN = Number.isFinite(Number(fm.chapter)) ? Number(fm.chapter) : chapFromPathN;
-  const chapS = String(fm.chapter ?? chapFromPathS); // <-- This is the string "001"
+  
+  // --- THIS IS THE FIX ---
+  // We will ALWAYS use the chapter string from the filename (chapFromPathS)
+  // This will be "001", "002", etc.
+  const chapS = chapFromPathS; 
+  // ------------------------
+
   const title = fm.title || (Number.isFinite(chapN) ? `الفصل ${chapS}` : `الفصل`);
 
   if (!novelTitle) novelTitle = fm.novel || fmSlug;
@@ -45,15 +49,15 @@ for (const [path, mod] of Object.entries(files)) {
   description = fm.description || description;
 
   rows.push({
-    chapterN: chapN, // <-- This is the number 1 (for sorting)
-    chapterS: chapS, // <-- This is the string "001" (for display)
+    chapterN: chapN,
+    chapterS: chapS,
     title,
-    url: `/novels/${wantSlug}/${chapS}`, // <-- This creates the correct URL
+    // This will now create the correct URL, e.g., /novels/karih-al-shoujo/003
+    url: `/novels/${wantSlug}/${chapS}`, 
     publishedAt: fm.publishedAt
   });
 }
 
-// Sort by the number, not the string
 rows.sort((a,b)=> a.chapterN - b.chapterN);
 const notFound = rows.length === 0;
 const pageTitle = notFound ? "غير موجود" : `فصول ${novelTitle}`;
@@ -64,6 +68,7 @@ const pageTitle = notFound ? "غير موجود" : `فصول ${novelTitle}`;
     <section class="card" style="margin:18px 0;padding:20px;border-radius:16px;">
       <h1 style="margin:0 0 6px">غير موجود</h1>
       <p class="muted">لا توجد فصول للرواية ذات المعرّف <code>{String(slug)}</code>.</p>
+      <p class="muted">(تأكّد أن ملفات .md موجودة في <code>src/content/novels/{slug}/</code>)</p>
       <p><a href="/novels">العودة إلى كل الروايات</a></p>
     </section>
   ) : (
@@ -79,7 +84,6 @@ const pageTitle = notFound ? "غير موجود" : `فصول ${novelTitle}`;
       <ol style="margin:0;padding-inline-start:18px;display:grid;gap:6px">
         {rows.map(r => (
           <li>
-            {/* UPDATED LINK TEXT to use the chapter string */}
             <a href={r.url}>الفصل {r.chapterS}: {r.title}</a>
             {r.publishedAt && <span class="muted" style="margin-inline-start:8px">— {r.publishedAt}</span>}
           </li>
