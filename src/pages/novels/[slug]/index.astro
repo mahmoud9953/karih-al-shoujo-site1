@@ -18,7 +18,7 @@ let description = "";
 function deriveFromPath(path: string) {
   const parts = path.split("/");
   const slugFromPath = parts[4] || "";
-  const fileName     = parts[5] || "";
+  const fileName = parts[5] || "";
   const m = fileName.match(/^(\d+)|-(\d+)\./) || fileName.match(/(\d+)(?=\.md$)/);
   const chapFromPathN = m ? Number(m[1] ?? m[2]) : NaN;
   // This new line saves the original string (like "001")
@@ -32,16 +32,16 @@ for (const [path, mod] of Object.entries(files)) {
   // Get all parts from the helper
   const { slugFromPath, chapFromPathN, chapFromPathS } = deriveFromPath(path);
 
-  const fmSlug   = String(fm.slug ?? slugFromPath).trim();
+  const fmSlug = String(fm.slug ?? slugFromPath).trim();
   if (fmSlug !== wantSlug) continue;
 
   // Use frontmatter values if they exist, otherwise use our derived values
-  const chapN  = Number.isFinite(Number(fm.chapter)) ? Number(fm.chapter) : chapFromPathN;
-  const chapS  = String(fm.chapter ?? chapFromPathS); // <-- This is the string "001"
-  const title  = fm.title || (Number.isFinite(chapN) ? `الفصل ${chapS}` : `الفصل`);
+  const chapN = Number.isFinite(Number(fm.chapter)) ? Number(fm.chapter) : chapFromPathN;
+  const chapS = String(fm.chapter ?? chapFromPathS); // <-- This is the string "001"
+  const title = fm.title || (Number.isFinite(chapN) ? `الفصل ${chapS}` : `الفصل`);
 
   if (!novelTitle) novelTitle = fm.novel || fmSlug;
-  cover         = fm.cover || cover;
+  cover = fm.cover || cover;
   description = fm.description || description;
 
   rows.push({
