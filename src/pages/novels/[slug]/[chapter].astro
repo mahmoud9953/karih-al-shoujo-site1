@@ -21,7 +21,7 @@ function deriveFromPath(path: string) {
   // pull leading number (e.g. 006 -> 6) or last number in name
   const m = fileName.match(/^(\d+)|-(\d+)\./) || fileName.match(/(\d+)(?=\.md$)/);
   const chapFromPathN = m ? Number(m[1] ?? m[2]) : NaN;
-  
+
   // THIS IS THE FIX: Save the original string "006"
   const chapFromPathS_actual = m ? String(m[1] ?? m[2]) : String(chapFromPathN);
 
@@ -118,7 +118,7 @@ chapter: {String(chapter)}</pre>
       <found!.Content />
 
       <footer style="margin-top:18px">
-        <a class="muted" href={`/novels/${slug}`}>◀ العودة إلى فصول {found!.fm.novel || found!.fm.slug}</a>
+        <a class="muted" href={`/novels/${slug}`}>◀ العودة إلى فصول {found!.fm.novel || found!.slug}</a>
       </footer>
     </article>
   )}
