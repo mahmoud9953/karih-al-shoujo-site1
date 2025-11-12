@@ -5,7 +5,7 @@ const { slug = "", chapter = "" } = Astro.params;
 
 // normalize URL params
 const wantSlug   = String(slug).trim();
-const wantChapS  = String(chapter).trim();
+const wantChapS  = String(chapter).trim(); // This will be "001" from the URL
 const wantChapN  = Number(wantChapS);
 
 // grab all markdown chapters at build/runtime
@@ -21,11 +21,15 @@ function deriveFromPath(path: string) {
   // pull leading number (e.g. 006 -> 6) or last number in name
   const m = fileName.match(/^(\d+)|-(\d+)\./) || fileName.match(/(\d+)(?=\.md$)/);
   const chapFromPathN = m ? Number(m[1] ?? m[2]) : NaN;
+  
+  // THIS IS THE FIX: Save the original string "006"
+  const chapFromPathS_actual = m ? String(m[1] ?? m[2]) : String(chapFromPathN);
 
   return {
     slugFromPath: String(slugFromPath).trim(),
     chapFromPathN,
-    chapFromPathS: String(chapFromPathN),
+    // Return the correct original string
+    chapFromPathS: chapFromPathS_actual,
   };
 }
 
@@ -37,6 +41,7 @@ type Found = {
 function pick(): Found | null {
   for (const [path, mod] of Object.entries(files)) {
     const fm = (mod as any).frontmatter ?? {};
+    // This will now correctly get chapFromPathS as "001", "002", etc.
     const { slugFromPath, chapFromPathN, chapFromPathS } = deriveFromPath(path);
 
     const fmSlugS   = String(fm.slug ?? "").trim() || slugFromPath;
@@ -46,6 +51,7 @@ function pick(): Found | null {
     // compare both as numbers (when numeric) OR as exact strings
     const chapMatch =
       (Number.isFinite(wantChapN) && Number.isFinite(fmChapN) && fmChapN === wantChapN) ||
+      // This will now correctly compare "001" === "001"
       fmChapS === wantChapS;
 
     if (fmSlugS === wantSlug && chapMatch) {
@@ -89,7 +95,8 @@ chapter: {String(chapter)}</pre>
     return {
       path: p.replace(/^.*\/src\/content\/novels\//, "…/"),
       slug: fm.slug || d.slugFromPath,
-      chapter: fm.chapter ?? d.chapFromPathN ?? d.chapFromPathS,
+      // This debug output will now show the correct string
+      chapter: fm.chapter ?? d.chapFromPathS ?? d.chapFromPathN,
       title: fm.title || null
     };
   }),
