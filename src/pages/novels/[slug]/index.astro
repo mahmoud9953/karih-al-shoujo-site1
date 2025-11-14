@@ -1,78 +1,67 @@
 ---
 import Base from "@/layouts/Base.astro";
+import { getCollection } from "astro:content";
 
 const { slug = "" } = Astro.params;
 const wantSlug = String(slug).trim();
 
-const files = import.meta.glob("/src/content/novels/**/*.md", { eager: true }) as Record<string, any>;
+// 1. Get all chapters from the "novels" collection
+const allChapters = await getCollection("novels");
 
-type Row = { chapterN:number; chapterS:string; title:string; url:string; publishedAt?:string };
+// 2. Filter chapters for the novel we are looking at
+const novelChapters = allChapters.filter(chapter => {
+  // Check the folder name (e.g., "karih-al-shoujo")
+  return chapter.slug.startsWith(wantSlug);
+});
 
-const rows: Row[] = [];
-let novelTitle = "";
-let cover = "/cover3.png";
-let description = "";
-
-function deriveFromPath(path: string) {
-  const parts = path.split("/");
-  const slugFromPath = parts[4] || "";
-  const fileName = parts[5] || "";
+// 3. Map the data for our page
+const rows = novelChapters.map(chapter => {
+  // The chapter slug will be "karih-al-shoujo/001-المقدمة"
+  // We just want the filename part: "001-المقدمة"
+  const chapterFilename = chapter.slug.split('/')[1];
   
-  // This regex will match "001", "003", and "003.5" from your filenames
-  const m = fileName.match(/^(\d+\.?\d*)/); 
-  
-  const chapFromPathN = m ? Number(m[1]) : NaN;
-  const chapFromPathS = m ? String(m[1]) : String(chapFromPathN);
-  
-  return { slugFromPath: String(slugFromPath).trim(), chapFromPathN, chapFromPathS };
-}
+  return {
+    chapterN: chapter.data.chapter, // The number 1, 2, 3 from frontmatter
+    chapterS: chapterFilename,      // The string "001-المقدمة", "002-", etc.
+    title: chapter.data.title,
+    url: `/novels/${wantSlug}/${chapterFilename}`, // This creates the correct link
+    publishedAt: chapter.data.publishedAt
+  };
+});
 
-for (const [path, mod] of Object.entries(files)) {
-  const fm = (mod as any).frontmatter ?? {};
-  const { slugFromPath, chapFromPathN, chapFromPathS } = deriveFromPath(path);
-
-  // This will skip files that don't match (like .DS_Store)
-  if (!chapFromPathS) continue;
-
-  const fmSlug = String(fm.slug ?? slugFromPath).trim();
-  if (fmSlug !== wantSlug) continue;
-
-  const chapN = Number.isFinite(Number(fm.chapter)) ? Number(fm.chapter) : chapFromPathN;
-  const title = fm.title || (Number.isFinite(chapN) ? `الفصل ${chapFromPathS}` : `الفصل`);
-
-  if (!novelTitle) novelTitle = fm.novel || fmSlug;
-  cover = fm.cover || cover;
-  description = fm.description || description;
-
-  rows.push({
-    chapterN: chapN,
-    chapterS: chapFromPathS, // This is "003" or "003.5"
-    title,
-    // This now creates the correct URL
-    url: `/novels/${wantSlug}/${chapFromPathS}`, 
-    publishedAt: fm.publishedAt
-  });
-}
-
+// 4. Sort the chapters by the chapter number
 rows.sort((a,b)=> a.chapterN - b.chapterN);
+
+// 5. Check if we found anything
 const notFound = rows.length === 0;
-const pageTitle = notFound ? "غير موجود" : `فصول ${novelTitle}`;
+
+// Get metadata for the header (from the first chapter we found)
+let novelTitleDisplay = wantSlug;
+let description = "";
+let cover = "/cover3.png";
+
+if (!notFound) {
+  novelTitleDisplay = novelChapters[0].data.novel || wantSlug;
+  description = novelChapters[0].data.description || "";
+  cover = novelChapters[0].data.cover || cover;
+}
+
+const pageTitle = notFound ? "غير موجود" : `فصول ${novelTitleDisplay}`;
 ---
 
 <Base title={pageTitle} description={description}>
   {notFound ? (
     <section class="card" style="margin:18px 0;padding:20px;border-radius:16px;">
       <h1 style="margin:0 0 6px">غير موجود</h1>
-      <p class="muted">لا توجد فصول للرواية ذات المعرّف <code>{String(slug)}</code>.</p>
-      <p class="muted">(تأكّد أن ملفات .md موجودة في <code>src/content/novels/{slug}/</code>)</p>
-      <p><a href="/novels">العودة إلى كل الروايات</a></p>
+      <p class="muted">لا توجد فصول للرواية ذات المعرّف <code>{wantSlug}</code>.</p>
+      <p class="muted">Astro is looking for files in <code>src/content/novels/</code>.</p>
     </section>
   ) : (
     <section class="card" style="margin:18px 0;padding:20px;border-radius:16px;">
-      <div style="display:flex;gap:14px;align:items:center;margin-bottom:10px">
-        <img src={cover} alt={novelTitle} style="width:88px;height:88px;object-fit:cover;border-radius:12px;border:1px solid var(--stroke)" />
+      <div style="display:flex;gap:14px;align-items:center;margin-bottom:10px">
+        <img src={cover} alt={novelTitleDisplay} style="width:88px;height:88px;object-fit:cover;border-radius:12px;border:1px solid var(--stroke)" />
         <div>
-          <h1 style="margin:0 0 6px">{novelTitle}</h1>
+          <h1 style="margin:0 0 6px">{novelTitleDisplay}</h1>
           {description && <p class="muted" style="margin:0">{description}</p>}
         </div>
       </div>
@@ -80,7 +69,7 @@ const pageTitle = notFound ? "غير موجود" : `فصول ${novelTitle}`;
       <ol style="margin:0;padding-inline-start:18px;display:grid;gap:6px">
         {rows.map(r => (
           <li>
-            <a href={r.url}>الفصل {r.chapterS}: {r.title}</a>
+            <a href={r.url}>{r.title}</a>
             {r.publishedAt && <span class="muted" style="margin-inline-start:8px">— {r.publishedAt}</span>}
           </li>
         ))}

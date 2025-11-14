@@ -1,101 +1,38 @@
 ---
 import Base from "@/layouts/Base.astro";
+import { getEntry } from "astro:content";
 
 const { slug = "", chapter = "" } = Astro.params;
 
-// normalize URL params
-const wantSlug = String(slug).trim();
-const wantChapS = String(chapter).trim(); // This will be "001" from the URL
-const wantChapN = Number(wantChapS);
+// 1. Get the specific chapter entry from the collection
+// The ID will be "karih-al-shoujo/001-المقدمة"
+const entry = await getEntry("novels", `${slug}/${chapter}`);
 
-const files = import.meta.glob("/src/content/novels/**/*.md", { eager: true }) as Record<string, any>;
+const notFound = !entry;
 
-function deriveFromPath(path: string) {
-  const parts = path.split("/");
-  const slugFromPath = parts[4] || ""; // novels/<slug>/...
-  const fileName = parts[5] || ""; // 006-foo.md
-
-  // pull leading number (e.g. 006 -> 6) or last number in name
-  const m = fileName.match(/^(\d+)|-(\d+)\./) || fileName.match(/(\d+)(?=\.md$)/);
-  const chapFromPathN = m ? Number(m[1] ?? m[2]) : NaN;
-
-  // THIS IS THE FIX: Save the original string "006"
-  const chapFromPathS_actual = m ? String(m[1] ?? m[2]) : String(chapFromPathN);
-
-  return {
-    slugFromPath: String(slugFromPath).trim(),
-    chapFromPathN,
-    // Return the correct original string
-    chapFromPathS: chapFromPathS_actual,
-  };
+// 2. If we found it, render the content and get the frontmatter
+let Content, fm;
+if (entry) {
+  const rendered = await entry.render();
+  Content = rendered.Content;
+  fm = entry.data;
 }
 
-type Found = {
-  fm: any;
-  Content: any;
-};
-
-function pick(): Found | null {
-  for (const [path, mod] of Object.entries(files)) {
-    const fm = (mod as any).frontmatter ?? {};
-    const { slugFromPath, chapFromPathN, chapFromPathS } = deriveFromPath(path);
-
-    // This will skip files that don't match
-    if (!chapFromPathS) continue;
-
-    const fmSlugS = String(fm.slug ?? "").trim() || slugFromPath;
-    const fmChapS = String(fm.chapter ?? "").trim() || chapFromPathS;
-    const fmChapN = Number(fm.chapter ?? chapFromPathN);
-
-    // This will now check "003" === "003" OR 3 === 3
-    const chapMatch =
-      (Number.isFinite(wantChapN) && Number.isFinite(fmChapN) && fmChapN === wantChapN) ||
-      // This will now correctly compare "001" === "001"
-      fmChapS === wantChapS;
-
-    if (fmSlugS === wantSlug && chapMatch) {
-      return { fm: { ...fm, slug: fmSlugS, chapter: fmChapN || fmChapS }, Content: (mod as any).default };
-    }
-  }
-  return null;
-}
-
-const found = pick();
-const notFound = !found;
-
-const title = found
-  ? `${found.fm.title || `الفصل ${wantChapS}`} — ${found.fm.novel || found.fm.slug}`
+const title = fm
+  ? `${fm.title || `الفصل ${chapter}`} — ${fm.novel || fm.slug}`
   : "غير موجود";
 ---
 
-<Base title={title} description={found?.fm.summary || ""}>
+<Base title={title} description={fm?.summary || ""}>
   {notFound ? (
     <section class="card" style="margin:18px 0;padding:20px;border-radius:16px;">
       <h1 style="margin-top:0">غير موجود</h1>
       <p class="muted">لم نعثر على هذا الفصل.</p>
-
+      
       <details style="margin-top:10px">
         <summary>تفاصيل تصحيح</summary>
-        <ul>
-          <li>Looking for slug: <code>{wantSlug}</code></li>
-          <li>Looking for chapter: <code>{wantChapS}</code></li>
-        </ul>
-        <p>الفصول التي اكتشفها النظام:</p>
-        <pre style="white-space:pre-wrap;max-height:220px;overflow:auto">
-{JSON.stringify(
-  Object.entries(files).map(([p,m]: any) => {
-    const fm = m.frontmatter ?? {};
-    const d = deriveFromPath(p);
-    return {
-      path: p.replace(/^.*\/src\/content\/novels\//, "…/"),
-      slug: fm.slug || d.slugFromPath,
-      // This debug output will now show the correct string
-      chapter: fm.chapter ?? d.chapFromPathS ?? d.chapFromPathN,
-      title: fm.title || null
-    };
-  }),
-  null, 2)}
-        </pre>
+        <p>Astro tried to find this content entry:</p>
+        <code>src/content/novels/{slug}/{chapter}.md</code>
       </details>
 
       <p><a href={`/novels/${slug}`}>العودة إلى الفصول</a></p>
@@ -103,16 +40,16 @@ const title = found
   ) : (
     <article class="card" style="margin:18px 0;padding:22px;border-radius:16px;">
       <header style="margin-bottom:14px">
-        <h1 style="margin:0 0 6px">{found!.fm.title || `الفصل ${wantChapS}`}</h1>
+        <h1 style="margin:0 0 6px">{fm.title || `الفصل ${chapter}`}</h1>
         <p class="muted" style="margin:0">
-          {found!.fm.novel || found!.fm.slug} — الفصل {wantChapS}
+          {fm.novel || fm.slug} — {fm.title}
         </p>
       </header>
 
-      <found!.Content />
+      <Content />
 
       <footer style="margin-top:18px">
-        <a class="muted" href={`/novels/${slug}`}>◀ العودة إلى فصول {found!.fm.novel || found!.slug}</a>
+        <a class="muted" href={`/novels/${slug}`}>◀ العودة إلى فصول {fm.novel || fm.slug}</a>
       </footer>
     </article>
   )}
