@@ -1,16 +1,25 @@
 ---
 import Base from "@/layouts/Base.astro";
-import { getEntry } from "astro:content";
+import { getCollection } from "astro:content";
 
 const { slug = "", chapter = "" } = Astro.params;
+const wantSlug = String(slug).trim();
+const chapterNum = Number(chapter);
 
-// 1. Get the specific chapter entry from the collection
-// The ID will be "karih-al-shoujo/001-المقدمة"
-const entry = await getEntry("novels", `${slug}/${chapter}`);
+// 1. هات كل الفصول التابعة لنفس الرواية
+const chapters = await getCollection(
+  "novels",
+  (entry) => entry.data.slug === wantSlug
+);
+
+// 2. ابحث عن الفصل المطلوب حسب رقم الفصل من الـ frontmatter
+const entry = chapters.find(
+  (item) => Number(item.data.chapter) === chapterNum
+);
 
 const notFound = !entry;
 
-// 2. If we found it, render the content and get the frontmatter
+// 3. لو لقيّناه، حضّر المحتوى والـ frontmatter
 let Content, fm;
 if (entry) {
   const rendered = await entry.render();
@@ -19,37 +28,47 @@ if (entry) {
 }
 
 const title = fm
-  ? `${fm.title || `الفصل ${chapter}`} — ${fm.novel || fm.slug}`
+  ? `${fm.title || `الفصل ${chapter}`} — ${fm.novel || wantSlug}`
   : "غير موجود";
 ---
 
 <Base title={title} description={fm?.summary || ""}>
   {notFound ? (
-    <section class="card" style="margin:18px 0;padding:20px;border-radius:16px;">
+    <section
+      class="card"
+      style="margin:18px 0;padding:20px;border-radius:16px;"
+    >
       <h1 style="margin-top:0">غير موجود</h1>
       <p class="muted">لم نعثر على هذا الفصل.</p>
-      
+
       <details style="margin-top:10px">
         <summary>تفاصيل تصحيح</summary>
-        <p>Astro tried to find this content entry:</p>
-        <code>src/content/novels/{slug}/{chapter}.md</code>
+        <p>تم البحث عن فصل برقم {chapterNum} في رواية {wantSlug}.</p>
+        <p>تأكد أن حقل <code>slug</code> في الـ frontmatter يساوي "{wantSlug}" وأن حقل <code>chapter</code> يساوي {chapterNum}.</p>
       </details>
 
-      <p><a href={`/novels/${slug}`}>العودة إلى الفصول</a></p>
+      <p>
+        <a href={`/novels/${wantSlug}`}>العودة إلى الفصول</a>
+      </p>
     </section>
   ) : (
-    <article class="card" style="margin:18px 0;padding:22px;border-radius:16px;">
+    <article
+      class="card"
+      style="margin:18px 0;padding:22px;border-radius:16px;"
+    >
       <header style="margin-bottom:14px">
         <h1 style="margin:0 0 6px">{fm.title || `الفصل ${chapter}`}</h1>
         <p class="muted" style="margin:0">
-          {fm.novel || fm.slug} — {fm.title}
+          {fm.novel || wantSlug} — {fm.title}
         </p>
       </header>
 
       <Content />
 
       <footer style="margin-top:18px">
-        <a class="muted" href={`/novels/${slug}`}>◀ العودة إلى فصول {fm.novel || fm.slug}</a>
+        <a class="muted" href={`/novels/${wantSlug}`}>
+          ◀ العودة إلى فصول {fm.novel || wantSlug}
+        </a>
       </footer>
     </article>
   )}

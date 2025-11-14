@@ -5,37 +5,31 @@ import { getCollection } from "astro:content";
 const { slug = "" } = Astro.params;
 const wantSlug = String(slug).trim();
 
-// 1. Get all chapters from the "novels" collection
-const allChapters = await getCollection("novels");
+// 1. هات كل الفصول اللي belong لنفس الرواية حسب الـ frontmatter.slug
+const novelChapters = await getCollection(
+  "novels",
+  (entry) => entry.data.slug === wantSlug
+);
 
-// 2. Filter chapters for the novel we are looking at
-const novelChapters = allChapters.filter(chapter => {
-  // Check the folder name (e.g., "karih-al-shoujo")
-  return chapter.slug.startsWith(wantSlug);
-});
+// 2. جهّز بيانات العرض
+const rows = novelChapters.map((entry) => {
+  const chapterN = entry.data.chapter; // رقم الفصل من الـ frontmatter
 
-// 3. Map the data for our page
-const rows = novelChapters.map(chapter => {
-  // The chapter slug will be "karih-al-shoujo/001-المقدمة"
-  // We just want the filename part: "001-المقدمة"
-  const chapterFilename = chapter.slug.split('/')[1];
-  
   return {
-    chapterN: chapter.data.chapter, // The number 1, 2, 3 from frontmatter
-    chapterS: chapterFilename,      // The string "001-المقدمة", "002-", etc.
-    title: chapter.data.title,
-    url: `/novels/${wantSlug}/${chapterFilename}`, // This creates the correct link
-    publishedAt: chapter.data.publishedAt
+    chapterN,
+    title: entry.data.title,
+    url: `/novels/${wantSlug}/${chapterN}`, // لاحظ: هنا بس رقم واحد للفصل
+    publishedAt: entry.data.publishedAt,
   };
 });
 
-// 4. Sort the chapters by the chapter number
-rows.sort((a,b)=> a.chapterN - b.chapterN);
+// 3. ترتيب الفصول حسب رقم الفصل
+rows.sort((a, b) => a.chapterN - b.chapterN);
 
-// 5. Check if we found anything
+// 4. هل وجدنا فصول؟
 const notFound = rows.length === 0;
 
-// Get metadata for the header (from the first chapter we found)
+// ميتاداتا للرأس
 let novelTitleDisplay = wantSlug;
 let description = "";
 let cover = "/cover3.png";
@@ -53,24 +47,40 @@ const pageTitle = notFound ? "غير موجود" : `فصول ${novelTitleDisplay
   {notFound ? (
     <section class="card" style="margin:18px 0;padding:20px;border-radius:16px;">
       <h1 style="margin:0 0 6px">غير موجود</h1>
-      <p class="muted">لا توجد فصول للرواية ذات المعرّف <code>{wantSlug}</code>.</p>
-      <p class="muted">Astro is looking for files in <code>src/content/novels/</code>.</p>
+      <p class="muted">
+        لا توجد فصول للرواية ذات المعرّف <code>{wantSlug}</code>.
+      </p>
+      <p class="muted">
+        Astro يبحث عن الملفات في <code>src/content/novels/</code>.
+      </p>
     </section>
   ) : (
     <section class="card" style="margin:18px 0;padding:20px;border-radius:16px;">
       <div style="display:flex;gap:14px;align-items:center;margin-bottom:10px">
-        <img src={cover} alt={novelTitleDisplay} style="width:88px;height:88px;object-fit:cover;border-radius:12px;border:1px solid var(--stroke)" />
+        <img
+          src={cover}
+          alt={novelTitleDisplay}
+          style="width:88px;height:88px;object-fit:cover;border-radius:12px;border:1px solid var(--stroke)"
+        />
         <div>
           <h1 style="margin:0 0 6px">{novelTitleDisplay}</h1>
-          {description && <p class="muted" style="margin:0">{description}</p>}
+          {description && (
+            <p class="muted" style="margin:0">
+              {description}
+            </p>
+          )}
         </div>
       </div>
 
       <ol style="margin:0;padding-inline-start:18px;display:grid;gap:6px">
-        {rows.map(r => (
+        {rows.map((r) => (
           <li>
             <a href={r.url}>{r.title}</a>
-            {r.publishedAt && <span class="muted" style="margin-inline-start:8px">— {r.publishedAt}</span>}
+            {r.publishedAt && (
+              <span class="muted" style="margin-inline-start:8px">
+                — {r.publishedAt}
+              </span>
+            )}
           </li>
         ))}
       </ol>
