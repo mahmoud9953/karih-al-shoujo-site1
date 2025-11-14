@@ -5,26 +5,28 @@ const { slug = "", chapter = "" } = Astro.params;
 
 // normalize URL params
 const wantSlug = String(slug).trim();
-const wantChapS = String(chapter).trim(); // This will be "001", "003.5", etc.
+const wantChapS = String(chapter).trim(); // This will be "001" from the URL
 const wantChapN = Number(wantChapS);
 
 const files = import.meta.glob("/src/content/novels/**/*.md", { eager: true }) as Record<string, any>;
 
 function deriveFromPath(path: string) {
   const parts = path.split("/");
-  const slugFromPath = parts[4] || "";
-  const fileName = parts[5] || "";
-  
-  // This regex will match "001", "003", and "003.5" from your filenames
-  const m = fileName.match(/^(\d+\.?\d*)/); 
+  const slugFromPath = parts[4] || ""; // novels/<slug>/...
+  const fileName = parts[5] || ""; // 006-foo.md
 
-  const chapFromPathN = m ? Number(m[1]) : NaN;
-  const chapFromPathS = m ? String(m[1]) : String(chapFromPathN);
-  
+  // pull leading number (e.g. 006 -> 6) or last number in name
+  const m = fileName.match(/^(\d+)|-(\d+)\./) || fileName.match(/(\d+)(?=\.md$)/);
+  const chapFromPathN = m ? Number(m[1] ?? m[2]) : NaN;
+
+  // THIS IS THE FIX: Save the original string "006"
+  const chapFromPathS_actual = m ? String(m[1] ?? m[2]) : String(chapFromPathN);
+
   return {
     slugFromPath: String(slugFromPath).trim(),
     chapFromPathN,
-    chapFromPathS: chapFromPathS, // This is "003" or "003.5"
+    // Return the correct original string
+    chapFromPathS: chapFromPathS_actual,
   };
 }
 
@@ -48,6 +50,7 @@ function pick(): Found | null {
     // This will now check "003" === "003" OR 3 === 3
     const chapMatch =
       (Number.isFinite(wantChapN) && Number.isFinite(fmChapN) && fmChapN === wantChapN) ||
+      // This will now correctly compare "001" === "001"
       fmChapS === wantChapS;
 
     if (fmSlugS === wantSlug && chapMatch) {
@@ -86,9 +89,9 @@ const title = found
     return {
       path: p.replace(/^.*\/src\/content\/novels\//, "…/"),
       slug: fm.slug || d.slugFromPath,
-      chapter_string: d.chapFromPathS,
-      chapter_num: d.chapFromPathN,
-      fm_chapter: fm.chapter || null,
+      // This debug output will now show the correct string
+      chapter: fm.chapter ?? d.chapFromPathS ?? d.chapFromPathN,
+      title: fm.title || null
     };
   }),
   null, 2)}
