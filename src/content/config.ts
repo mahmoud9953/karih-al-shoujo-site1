@@ -1,12 +1,10 @@
 import { defineCollection, z } from "astro:content";
 
 const novels = defineCollection({
-  type: "content",
-
   schema: z.object({
     title: z.string(),
     novel: z.string(),
-    slug: z.string().optional(),   // frontmatter `slug` is allowed as normal data
+    slug: z.string(),
     chapter: z.number(),
     summary: z.string().optional(),
     publishedAt: z.string().optional(),
