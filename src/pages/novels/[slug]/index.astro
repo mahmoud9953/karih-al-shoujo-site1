@@ -3,39 +3,41 @@ import Base from "@/layouts/Base.astro";
 import { getCollection } from "astro:content";
 
 const { slug = "" } = Astro.params;
-const wantSlug = String(slug).trim();
+const novelSlug = String(slug).trim();
 
-// 1. هات كل الفصول اللي belong لنفس الرواية حسب الـ frontmatter.slug
-const novelChapters = await getCollection(
-  "novels",
-  (entry) => entry.data.slug === wantSlug
-);
+// 1. Get all chapters
+const allChapters = await getCollection("novels");
 
-// 2. جهّز بيانات العرض
+// 2. Keep only chapters of this novel
+const novelChapters = allChapters.filter((entry) => {
+  return entry.data.novelSlug === novelSlug;  // ⬅️ use novelSlug from frontmatter
+});
+
+// 3. Prepare rows
 const rows = novelChapters.map((entry) => {
-  const chapterN = entry.data.chapter; // رقم الفصل من الـ frontmatter
+  const chapterN = entry.data.chapter;
 
   return {
     chapterN,
     title: entry.data.title,
-    url: `/novels/${wantSlug}/${chapterN}`, // لاحظ: هنا بس رقم واحد للفصل
+    url: `/novels/${novelSlug}/${chapterN}`,   // /novels/karih-al-shoujo/6
     publishedAt: entry.data.publishedAt,
   };
 });
 
-// 3. ترتيب الفصول حسب رقم الفصل
+// 4. Sort by chapter number
 rows.sort((a, b) => a.chapterN - b.chapterN);
 
-// 4. هل وجدنا فصول؟
+// 5. Not found?
 const notFound = rows.length === 0;
 
-// ميتاداتا للرأس
-let novelTitleDisplay = wantSlug;
+// Header info
+let novelTitleDisplay = novelSlug;
 let description = "";
 let cover = "/cover3.png";
 
 if (!notFound) {
-  novelTitleDisplay = novelChapters[0].data.novel || wantSlug;
+  novelTitleDisplay = novelChapters[0].data.novel || novelSlug;
   description = novelChapters[0].data.description || "";
   cover = novelChapters[0].data.cover || cover;
 }
@@ -48,10 +50,7 @@ const pageTitle = notFound ? "غير موجود" : `فصول ${novelTitleDisplay
     <section class="card" style="margin:18px 0;padding:20px;border-radius:16px;">
       <h1 style="margin:0 0 6px">غير موجود</h1>
       <p class="muted">
-        لا توجد فصول للرواية ذات المعرّف <code>{wantSlug}</code>.
-      </p>
-      <p class="muted">
-        Astro يبحث عن الملفات في <code>src/content/novels/</code>.
+        لا توجد فصول للرواية ذات المعرّف <code>{novelSlug}</code>.
       </p>
     </section>
   ) : (
@@ -65,9 +64,7 @@ const pageTitle = notFound ? "غير موجود" : `فصول ${novelTitleDisplay
         <div>
           <h1 style="margin:0 0 6px">{novelTitleDisplay}</h1>
           {description && (
-            <p class="muted" style="margin:0">
-              {description}
-            </p>
+            <p class="muted" style="margin:0">{description}</p>
           )}
         </div>
       </div>

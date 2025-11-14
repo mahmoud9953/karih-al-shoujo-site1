@@ -3,23 +3,23 @@ import Base from "@/layouts/Base.astro";
 import { getCollection } from "astro:content";
 
 const { slug = "", chapter = "" } = Astro.params;
-const wantSlug = String(slug).trim();
+const novelSlug = String(slug).trim();
 const chapterNum = Number(chapter);
 
-// 1. هات كل الفصول التابعة لنفس الرواية
+// 1. Get all chapters of this novel
 const chapters = await getCollection(
   "novels",
-  (entry) => entry.data.slug === wantSlug
+  (entry) => entry.data.novelSlug === novelSlug
 );
 
-// 2. ابحث عن الفصل المطلوب حسب رقم الفصل من الـ frontmatter
+// 2. Find the specific chapter by its number
 const entry = chapters.find(
   (item) => Number(item.data.chapter) === chapterNum
 );
 
 const notFound = !entry;
 
-// 3. لو لقيّناه، حضّر المحتوى والـ frontmatter
+// 3. Render content if found
 let Content, fm;
 if (entry) {
   const rendered = await entry.render();
@@ -28,7 +28,7 @@ if (entry) {
 }
 
 const title = fm
-  ? `${fm.title || `الفصل ${chapter}`} — ${fm.novel || wantSlug}`
+  ? `${fm.title || `الفصل ${chapter}`} — ${fm.novel || novelSlug}`
   : "غير موجود";
 ---
 
@@ -42,13 +42,13 @@ const title = fm
       <p class="muted">لم نعثر على هذا الفصل.</p>
 
       <details style="margin-top:10px">
-        <summary>تفاصيل تصحيح</summary>
-        <p>تم البحث عن فصل برقم {chapterNum} في رواية {wantSlug}.</p>
-        <p>تأكد أن حقل <code>slug</code> في الـ frontmatter يساوي "{wantSlug}" وأن حقل <code>chapter</code> يساوي {chapterNum}.</p>
+        <summary>Debug info</summary>
+        <p>Looking for chapter <code>{chapterNum}</code> of novel <code>{novelSlug}</code>.</p>
+        <p>Make sure <code>novelSlug</code> and <code>chapter</code> in the frontmatter match.</p>
       </details>
 
       <p>
-        <a href={`/novels/${wantSlug}`}>العودة إلى الفصول</a>
+        <a href={`/novels/${novelSlug}`}>العودة إلى الفصول</a>
       </p>
     </section>
   ) : (
@@ -59,15 +59,15 @@ const title = fm
       <header style="margin-bottom:14px">
         <h1 style="margin:0 0 6px">{fm.title || `الفصل ${chapter}`}</h1>
         <p class="muted" style="margin:0">
-          {fm.novel || wantSlug} — {fm.title}
+          {fm.novel || novelSlug} — {fm.title}
         </p>
       </header>
 
       <Content />
 
       <footer style="margin-top:18px">
-        <a class="muted" href={`/novels/${wantSlug}`}>
-          ◀ العودة إلى فصول {fm.novel || wantSlug}
+        <a class="muted" href={`/novels/${novelSlug}`}>
+          ◀ العودة إلى فصول {fm.novel || novelSlug}
         </a>
       </footer>
     </article>
