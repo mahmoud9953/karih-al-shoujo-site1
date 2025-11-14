@@ -18,8 +18,8 @@ function deriveFromPath(path: string) {
   const slugFromPath = parts[4] || "";
   const fileName = parts[5] || "";
   
-  // This regex will match the "001", "002" at the start of your filenames
-  const m = fileName.match(/^(\d+)/); 
+  // This regex will match "001", "003", and "003.5" from your filenames
+  const m = fileName.match(/^(\d+\.?\d*)/); 
   
   const chapFromPathN = m ? Number(m[1]) : NaN;
   const chapFromPathS = m ? String(m[1]) : String(chapFromPathN);
@@ -31,18 +31,14 @@ for (const [path, mod] of Object.entries(files)) {
   const fm = (mod as any).frontmatter ?? {};
   const { slugFromPath, chapFromPathN, chapFromPathS } = deriveFromPath(path);
 
+  // This will skip files that don't match (like .DS_Store)
+  if (!chapFromPathS) continue;
+
   const fmSlug = String(fm.slug ?? slugFromPath).trim();
   if (fmSlug !== wantSlug) continue;
 
   const chapN = Number.isFinite(Number(fm.chapter)) ? Number(fm.chapter) : chapFromPathN;
-  
-  // --- THIS IS THE FIX ---
-  // We will ALWAYS use the chapter string from the filename (chapFromPathS)
-  // This will be "001", "002", etc.
-  const chapS = chapFromPathS; 
-  // ------------------------
-
-  const title = fm.title || (Number.isFinite(chapN) ? `الفصل ${chapS}` : `الفصل`);
+  const title = fm.title || (Number.isFinite(chapN) ? `الفصل ${chapFromPathS}` : `الفصل`);
 
   if (!novelTitle) novelTitle = fm.novel || fmSlug;
   cover = fm.cover || cover;
@@ -50,10 +46,10 @@ for (const [path, mod] of Object.entries(files)) {
 
   rows.push({
     chapterN: chapN,
-    chapterS: chapS,
+    chapterS: chapFromPathS, // This is "003" or "003.5"
     title,
-    // This will now create the correct URL, e.g., /novels/karih-al-shoujo/003
-    url: `/novels/${wantSlug}/${chapS}`, 
+    // This now creates the correct URL
+    url: `/novels/${wantSlug}/${chapFromPathS}`, 
     publishedAt: fm.publishedAt
   });
 }
@@ -73,7 +69,7 @@ const pageTitle = notFound ? "غير موجود" : `فصول ${novelTitle}`;
     </section>
   ) : (
     <section class="card" style="margin:18px 0;padding:20px;border-radius:16px;">
-      <div style="display:flex;gap:14px;align-items:center;margin-bottom:10px">
+      <div style="display:flex;gap:14px;align:items:center;margin-bottom:10px">
         <img src={cover} alt={novelTitle} style="width:88px;height:88px;object-fit:cover;border-radius:12px;border:1px solid var(--stroke)" />
         <div>
           <h1 style="margin:0 0 6px">{novelTitle}</h1>

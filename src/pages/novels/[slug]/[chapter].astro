@@ -5,31 +5,26 @@ const { slug = "", chapter = "" } = Astro.params;
 
 // normalize URL params
 const wantSlug = String(slug).trim();
-const wantChapS = String(chapter).trim(); // This will be "001" from the URL
+const wantChapS = String(chapter).trim(); // This will be "001", "003.5", etc.
 const wantChapN = Number(wantChapS);
 
-// grab all markdown chapters at build/runtime
 const files = import.meta.glob("/src/content/novels/**/*.md", { eager: true }) as Record<string, any>;
 
-// helpers: derive slug/chapter from the file path as fallback
 function deriveFromPath(path: string) {
-  // /src/content/novels/<slug>/<something-like-006-foo>.md
   const parts = path.split("/");
-  const slugFromPath = parts[4] || ""; // novels/<slug>/...
-  const fileName = parts[5] || ""; // 006-foo.md
+  const slugFromPath = parts[4] || "";
+  const fileName = parts[5] || "";
+  
+  // This regex will match "001", "003", and "003.5" from your filenames
+  const m = fileName.match(/^(\d+\.?\d*)/); 
 
-  // pull leading number (e.g. 006 -> 6) or last number in name
-  const m = fileName.match(/^(\d+)|-(\d+)\./) || fileName.match(/(\d+)(?=\.md$)/);
-  const chapFromPathN = m ? Number(m[1] ?? m[2]) : NaN;
-
-  // THIS IS THE FIX: Save the original string "006"
-  const chapFromPathS_actual = m ? String(m[1] ?? m[2]) : String(chapFromPathN);
-
+  const chapFromPathN = m ? Number(m[1]) : NaN;
+  const chapFromPathS = m ? String(m[1]) : String(chapFromPathN);
+  
   return {
     slugFromPath: String(slugFromPath).trim(),
     chapFromPathN,
-    // Return the correct original string
-    chapFromPathS: chapFromPathS_actual,
+    chapFromPathS: chapFromPathS, // This is "003" or "003.5"
   };
 }
 
@@ -41,17 +36,18 @@ type Found = {
 function pick(): Found | null {
   for (const [path, mod] of Object.entries(files)) {
     const fm = (mod as any).frontmatter ?? {};
-    // This will now correctly get chapFromPathS as "001", "002", etc.
     const { slugFromPath, chapFromPathN, chapFromPathS } = deriveFromPath(path);
+
+    // This will skip files that don't match
+    if (!chapFromPathS) continue;
 
     const fmSlugS = String(fm.slug ?? "").trim() || slugFromPath;
     const fmChapS = String(fm.chapter ?? "").trim() || chapFromPathS;
     const fmChapN = Number(fm.chapter ?? chapFromPathN);
 
-    // compare both as numbers (when numeric) OR as exact strings
+    // This will now check "003" === "003" OR 3 === 3
     const chapMatch =
       (Number.isFinite(wantChapN) && Number.isFinite(fmChapN) && fmChapN === wantChapN) ||
-      // This will now correctly compare "001" === "001"
       fmChapS === wantChapS;
 
     if (fmSlugS === wantSlug && chapMatch) {
@@ -78,13 +74,8 @@ const title = found
       <details style="margin-top:10px">
         <summary>تفاصيل تصحيح</summary>
         <ul>
-          <li>تأكّد أن الملف داخل <code>/src/content/novels/{String(slug)}/</code>.</li>
-          <li>الملف يجب أن ينتهي <code>.md</code>.</li>
-          <li>الـ frontmatter يفضّل أن يحتوي:
-            <pre>slug: "{String(slug)}"
-chapter: {String(chapter)}</pre>
-            (لكن الكود الآن يحاول الاكتشاف من اسم الملف عند الحاجة)
-          </li>
+          <li>Looking for slug: <code>{wantSlug}</code></li>
+          <li>Looking for chapter: <code>{wantChapS}</code></li>
         </ul>
         <p>الفصول التي اكتشفها النظام:</p>
         <pre style="white-space:pre-wrap;max-height:220px;overflow:auto">
@@ -95,9 +86,9 @@ chapter: {String(chapter)}</pre>
     return {
       path: p.replace(/^.*\/src\/content\/novels\//, "…/"),
       slug: fm.slug || d.slugFromPath,
-      // This debug output will now show the correct string
-      chapter: fm.chapter ?? d.chapFromPathS ?? d.chapFromPathN,
-      title: fm.title || null
+      chapter_string: d.chapFromPathS,
+      chapter_num: d.chapFromPathN,
+      fm_chapter: fm.chapter || null,
     };
   }),
   null, 2)}
