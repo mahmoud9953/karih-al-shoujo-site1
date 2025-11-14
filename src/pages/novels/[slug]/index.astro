@@ -10,7 +10,7 @@ const allChapters = await getCollection("novels");
 
 // 2. Keep only chapters of this novel
 const novelChapters = allChapters.filter((entry) => {
-  return entry.data.novelSlug === novelSlug;  // ⬅️ use novelSlug from frontmatter
+  return entry.data.slug === novelSlug;       // ✅ correct
 });
 
 // 3. Prepare rows
