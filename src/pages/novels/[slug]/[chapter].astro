@@ -5,8 +5,8 @@ const { slug = "", chapter = "" } = Astro.params;
 
 // normalize URL params
 const wantSlug = String(slug).trim();
-const wantChapS = String(chapter).trim(); // This will be "001" from the URL
-const wantChapN = Number(wantChapS);
+const wantChapS = String(chapter).trim(); // e.g., "001" or "1"
+const wantChapN = Number(wantChapS); // numeric version
 
 // grab all markdown chapters at build/runtime
 const files = import.meta.glob("/src/content/novels/**/*.md", { eager: true }) as Record<string, any>;
@@ -18,18 +18,15 @@ function deriveFromPath(path: string) {
   const slugFromPath = parts[4] || ""; // novels/<slug>/...
   const fileName = parts[5] || ""; // 006-foo.md
 
-  // pull leading number (e.g. 006 -> 6) or last number in name
-  const m = fileName.match(/^(\d+)|-(\d+)\./) || fileName.match(/(\d+)(?=\.md$)/);
-  const chapFromPathN = m ? Number(m[1] ?? m[2]) : NaN;
-
-  // THIS IS THE FIX: Save the original string "006"
-  const chapFromPathS_actual = m ? String(m[1] ?? m[2]) : String(chapFromPathN);
+  // pull leading number (e.g. 006 -> "006") or last number in name
+  const m = fileName.match(/^(\d+)/) || fileName.match(/(\d+)(?=\.md$)/);
+  const chapFromPathS = m ? m[1] : ""; // Keep as string with leading zeros
+  const chapFromPathN = chapFromPathS ? Number(chapFromPathS) : NaN;
 
   return {
     slugFromPath: String(slugFromPath).trim(),
     chapFromPathN,
-    // Return the correct original string
-    chapFromPathS: chapFromPathS_actual,
+    chapFromPathS, // This preserves "001", "002", etc.
   };
 }
 
@@ -41,7 +38,6 @@ type Found = {
 function pick(): Found | null {
   for (const [path, mod] of Object.entries(files)) {
     const fm = (mod as any).frontmatter ?? {};
-    // This will now correctly get chapFromPathS as "001", "002", etc.
     const { slugFromPath, chapFromPathN, chapFromPathS } = deriveFromPath(path);
 
     const fmSlugS = String(fm.slug ?? "").trim() || slugFromPath;
@@ -51,8 +47,9 @@ function pick(): Found | null {
     // compare both as numbers (when numeric) OR as exact strings
     const chapMatch =
       (Number.isFinite(wantChapN) && Number.isFinite(fmChapN) && fmChapN === wantChapN) ||
-      // This will now correctly compare "001" === "001"
-      fmChapS === wantChapS;
+      fmChapS === wantChapS ||
+      // Also try comparing without leading zeros
+      (chapFromPathS && String(Number(chapFromPathS)) === wantChapS);
 
     if (fmSlugS === wantSlug && chapMatch) {
       return { fm: { ...fm, slug: fmSlugS, chapter: fmChapN || fmChapS }, Content: (mod as any).default };
@@ -95,7 +92,6 @@ chapter: {String(chapter)}</pre>
     return {
       path: p.replace(/^.*\/src\/content\/novels\//, "…/"),
       slug: fm.slug || d.slugFromPath,
-      // This debug output will now show the correct string
       chapter: fm.chapter ?? d.chapFromPathS ?? d.chapFromPathN,
       title: fm.title || null
     };
